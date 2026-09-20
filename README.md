@@ -19,7 +19,7 @@ SaveTrick is a production-quality Android application built with Kotlin and Jetp
 - **Room Database**: Persistent download queue, stats, and history.
 - **Real Streaming Download Engine**: OkHttp byte-streaming, real progress tracking, accurate transfer speeds, and duplicate/cancellation management.
 - **Localization**: Full English and Bengali language support.
-- **Admin Portal**: Hidden 4-tap trigger, email/password Supabase auth with role verification, user management, audit logging, and payment verification.
+- **Admin Portal**: Hidden 4-tap trigger, email/password Firebase Auth with Firestore role verification, user management, audit logging, and payment verification.
 
 ## Building the APK
 To build the debug APK locally:

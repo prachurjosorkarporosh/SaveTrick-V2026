@@ -85,7 +85,7 @@ fun AdminLoginScreen(
         isLoading = true
 
         scope.launch {
-            val result = repository.supabaseClient.adminLogin(email, pass)
+            val result = repository.firebaseClient.adminLogin(email, pass)
             isLoading = false
             result.onSuccess {
                 onLoginSuccess()

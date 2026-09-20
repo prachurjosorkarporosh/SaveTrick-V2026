@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "admin" &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == "active";
+    }
+
+    // 1. Admins collection: Only authenticated users can read their own record; only admins can list/modify.
+    match /admins/{adminUid} {
+      allow read: if isAuthenticated() && (request.auth.uid == adminUid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // 2. Users collection:
+    // - Device users can register their profile and read by SaveTrick UID.
+    // - Admins can read, update status, and manage all users.
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if isAdmin() || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'lastActiveAt', 'downloadCount']));
+      allow delete: if isAdmin();
+    }
+
+    // 3. Pro Entitlements collection:
+    // - Users can check Pro status by UID.
+    // - ONLY admins (or Cloud Functions) can grant, extend, or revoke Pro entitlements.
+    // - Normal users are STRICTLY FORBIDDEN from modifying Pro entitlements.
+    match /pro_entitlements/{uid} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 4. Payment Orders collection:
+    // - Users submit bKash/Nagad payment orders.
+    // - ONLY admins can update payment status (approve/reject). Normal users cannot modify status.
+    match /payment_orders/{orderId} {
+      allow create: if true;
+      allow read: if true;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 5. Payment Events collection:
+    // - Internal payment event trail.
+    match /payment_events/{eventId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // 6. Payment Settings:
+    // - Read-only for normal users (to fetch merchant bKash/Nagad numbers and price).
+    // - ONLY authorized admins can modify settings.
+    match /payment_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 7. Admin Audit Logs:
+    // - Immutable audit log. Only authorized admins can view or append.
+    match /admin_audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}

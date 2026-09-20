@@ -10,7 +10,7 @@ import com.example.data.model.MediaType
 import com.example.data.model.PaymentOrder
 import com.example.data.model.PaymentSettings
 import com.example.data.model.UserRecord
-import com.example.data.remote.SupabaseClient
+import com.example.data.remote.FirebaseBackendClient
 import com.example.data.remote.TikTokResolverService
 import com.example.download.DownloadManager
 import com.example.util.UrlValidator
@@ -24,7 +24,7 @@ class SaveTrickRepository(private val context: Context) {
     val preferences = UserPreferences(context)
     val resolverService = TikTokResolverService()
     val downloadManager = DownloadManager.getInstance(context)
-    val supabaseClient = SupabaseClient(context)
+    val firebaseClient = FirebaseBackendClient(context)
 
     // Download flows
     val activeDownloads: Flow<List<DownloadEntity>> = downloadDao.getActiveDownloads()
@@ -84,29 +84,24 @@ class SaveTrickRepository(private val context: Context) {
     suspend fun registerUser(name: String): Result<Boolean> {
         preferences.setUserName(name)
         val uid = preferences.getUid()
-        val user = UserRecord(
-            uid = uid,
-            name = name,
-            createdAt = preferences.getCreatedAt(),
-            lastActiveAt = System.currentTimeMillis()
-        )
-        return supabaseClient.registerUser(user)
+        return firebaseClient.registerUser(name = name, uid = uid)
     }
 
     suspend fun syncProStatus() {
         val uid = preferences.getUid()
-        val backendPro = supabaseClient.getProStatus(uid)
+        val backendProResult = firebaseClient.getProStatus(uid)
+        val backendPro = backendProResult.getOrDefault(preferences.isProUser())
         if (backendPro != preferences.isProUser()) {
             preferences.setProStatus(backendPro)
         }
     }
 
     suspend fun getPaymentSettings(): PaymentSettings {
-        return supabaseClient.getPaymentSettings()
+        return firebaseClient.getPaymentSettings()
     }
 
-    suspend fun submitPayment(provider: String, trxId: String, amount: Double): Result<PaymentOrder> {
-        return supabaseClient.submitPaymentOrder(
+    suspend fun submitPayment(provider: String, trxId: String, amount: Double): Result<String> {
+        return firebaseClient.submitPaymentOrder(
             uid = preferences.getUid(),
             name = preferences.getUserName().ifBlank { "SaveTrick User" },
             provider = provider,

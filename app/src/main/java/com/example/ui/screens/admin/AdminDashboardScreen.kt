@@ -105,14 +105,14 @@ fun AdminDashboardScreen(
     var paymentSettings by remember { mutableStateOf(PaymentSettings()) }
     val totalDownloads by repository.totalDownloadsCount.collectAsState(initial = 0)
 
-    val adminEmail = repository.supabaseClient.adminEmail ?: "admin"
+    val adminEmail = repository.firebaseClient.adminEmail ?: "admin"
 
     fun reloadData() {
         scope.launch {
-            users = repository.supabaseClient.getAllUsers()
-            payments = repository.supabaseClient.getAllPayments()
-            auditLogs = repository.supabaseClient.getAllAuditLogs()
-            paymentSettings = repository.supabaseClient.getPaymentSettings()
+            users = repository.firebaseClient.getAllUsers()
+            payments = repository.firebaseClient.getAllPayments()
+            auditLogs = repository.firebaseClient.getAllAuditLogs()
+            paymentSettings = repository.firebaseClient.getPaymentSettings()
         }
     }
 
@@ -146,7 +146,7 @@ fun AdminDashboardScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            repository.supabaseClient.logoutAdmin()
+                            repository.firebaseClient.logoutAdmin()
                             onLogout()
                         },
                         modifier = Modifier.testTag("btn_admin_logout")
@@ -215,10 +215,10 @@ fun AdminDashboardScreen(
                         onUpdateUser = { uid, isPro, status ->
                             scope.launch {
                                 if (isPro != null) {
-                                    repository.supabaseClient.setUserPro(uid, isPro, 30, adminEmail)
+                                    repository.firebaseClient.setUserPro(uid, isPro, 30, adminEmail)
                                 }
                                 if (status != null) {
-                                    repository.supabaseClient.setUserStatus(uid, status, adminEmail)
+                                    repository.firebaseClient.setUserStatus(uid, status, adminEmail)
                                 }
                                 reloadData()
                                 Toast.makeText(context, "User updated", Toast.LENGTH_SHORT).show()
@@ -229,14 +229,14 @@ fun AdminDashboardScreen(
                         payments = payments,
                         onApprove = { id ->
                             scope.launch {
-                                repository.supabaseClient.updatePaymentStatus(id, "PAID", adminEmail)
+                                repository.firebaseClient.updatePaymentStatus(id, "PAID", adminEmail)
                                 reloadData()
                                 Toast.makeText(context, "Payment approved & Pro granted", Toast.LENGTH_SHORT).show()
                             }
                         },
                         onReject = { id ->
                             scope.launch {
-                                repository.supabaseClient.updatePaymentStatus(id, "REJECTED", adminEmail)
+                                repository.firebaseClient.updatePaymentStatus(id, "REJECTED", adminEmail)
                                 reloadData()
                                 Toast.makeText(context, "Payment rejected", Toast.LENGTH_SHORT).show()
                             }
@@ -246,7 +246,7 @@ fun AdminDashboardScreen(
                         initialSettings = paymentSettings,
                         onSave = { updated ->
                             scope.launch {
-                                repository.supabaseClient.updatePaymentSettings(updated, adminEmail)
+                                repository.firebaseClient.updatePaymentSettings(updated, adminEmail)
                                 paymentSettings = updated
                                 reloadData()
                                 Toast.makeText(context, "Payment settings saved", Toast.LENGTH_SHORT).show()
