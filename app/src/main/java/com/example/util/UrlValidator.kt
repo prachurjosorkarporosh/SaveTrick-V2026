@@ -30,8 +30,15 @@ object UrlValidator {
         }
         if (startIndex != -1) {
             val sub = url.substring(startIndex)
-            val spaceIndex = sub.indexOfAny(charArrayOf(' ', '\n', '\t'))
+            val spaceIndex = sub.indexOfAny(charArrayOf(' ', '\n', '\t', '\r'))
             url = if (spaceIndex != -1) sub.substring(0, spaceIndex) else sub
+        }
+        // Remove trailing punctuation often captured from chat messages or markdown
+        url = url.trimEnd(')', ']', '>', '}', '"', '\'', ',', ';', '.')
+        
+        // If URL doesn't start with protocol but matches a domain, prepend https://
+        if (!url.startsWith("http://") && !url.startsWith("https://") && url.isNotBlank()) {
+            url = "https://$url"
         }
         return url
     }

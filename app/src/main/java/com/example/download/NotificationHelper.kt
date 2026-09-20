@@ -72,7 +72,7 @@ class NotificationHelper(private val context: Context) {
         }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_PROGRESS)
-            .setSmallIcon(R.drawable.savetrick_logo)
+            .setSmallIcon(R.drawable.ic_stat_download)
             .setContentTitle("Downloading: $title")
             .setContentText(contentText)
             .setOngoing(true)
@@ -99,7 +99,7 @@ class NotificationHelper(private val context: Context) {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_COMPLETE)
-            .setSmallIcon(R.drawable.savetrick_logo)
+            .setSmallIcon(R.drawable.ic_stat_check)
             .setContentTitle("Download Complete")
             .setContentText("$title ($fileName)")
             .setAutoCancel(true)

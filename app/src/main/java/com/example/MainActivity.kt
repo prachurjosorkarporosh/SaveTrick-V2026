@@ -59,8 +59,7 @@ class MainActivity : ComponentActivity() {
         LocaleHelper.applyLocale(this, repository.preferences.getLanguage())
 
         setContent {
-            val themeModeFromRepo by repository.themeMode.collectAsState()
-            var currentTheme by remember { mutableStateOf(themeModeFromRepo) }
+            val currentTheme by repository.themeMode.collectAsState()
             val currentLanguage by repository.language.collectAsState()
 
             val systemConfiguration = LocalConfiguration.current
@@ -117,7 +116,7 @@ class MainActivity : ComponentActivity() {
                                     navController = navController,
                                     repository = repository,
                                     onThemeChanged = { newTheme ->
-                                        currentTheme = newTheme
+                                        repository.preferences.setThemeMode(newTheme)
                                     }
                                 )
                             }

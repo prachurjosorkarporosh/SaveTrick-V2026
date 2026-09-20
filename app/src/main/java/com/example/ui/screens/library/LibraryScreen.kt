@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -633,7 +634,15 @@ private fun openFile(context: Context, item: DownloadEntity) {
             Toast.makeText(context, "File no longer exists on disk", Toast.LENGTH_SHORT).show()
             return
         }
-        val uri = Uri.parse(item.fileUri)
+        val uri = try {
+            FileProvider.getUriForFile(
+                context,
+                "com.prachurjo.savetrick.app.fileprovider",
+                file
+            )
+        } catch (_: Exception) {
+            Uri.parse(item.fileUri)
+        }
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, item.mimeType.ifBlank { "*/*" })
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
@@ -651,13 +660,24 @@ private fun shareFile(context: Context, item: DownloadEntity) {
             Toast.makeText(context, "File no longer exists", Toast.LENGTH_SHORT).show()
             return
         }
-        val uri = Uri.parse(item.fileUri)
+        val uri = try {
+            FileProvider.getUriForFile(
+                context,
+                "com.prachurjo.savetrick.app.fileprovider",
+                file
+            )
+        } catch (_: Exception) {
+            Uri.parse(item.fileUri)
+        }
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = item.mimeType.ifBlank { "*/*" }
             putExtra(Intent.EXTRA_STREAM, uri)
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
         }
-        context.startActivity(Intent.createChooser(intent, "Share Media"))
+        val chooser = Intent.createChooser(intent, "Share Media").apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(chooser)
     } catch (e: Exception) {
         Toast.makeText(context, "Unable to share file: ${e.message}", Toast.LENGTH_SHORT).show()
     }

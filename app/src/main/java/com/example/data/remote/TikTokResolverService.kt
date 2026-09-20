@@ -69,8 +69,16 @@ class TikTokResolverService {
 
             val data = json.getJSONObject("data")
             val title = data.optString("title", "TikTok Media")
-            val cover = data.optString("cover", "")
-            val play = data.optString("play", "")
+            val rawCover = data.optString("cover", "")
+            val cover = if (rawCover.isNotBlank()) {
+                if (rawCover.startsWith("http")) rawCover else "https://www.tikwm.com$rawCover"
+            } else ""
+            val rawPlay = data.optString("play", "").ifBlank {
+                data.optString("hdplay", "").ifBlank {
+                    data.optString("wmplay", "")
+                }
+            }
+            val play = rawPlay
             val music = data.optString("music", "")
             val duration = data.optLong("duration", 0L)
 
@@ -84,7 +92,8 @@ class TikTokResolverService {
                 for (i in 0 until imagesArray.length()) {
                     val imgUrl = imagesArray.optString(i, "")
                     if (imgUrl.isNotBlank()) {
-                        images.add(imgUrl)
+                        val fullImg = if (imgUrl.startsWith("http")) imgUrl else "https://www.tikwm.com$imgUrl"
+                        images.add(fullImg)
                     }
                 }
             }

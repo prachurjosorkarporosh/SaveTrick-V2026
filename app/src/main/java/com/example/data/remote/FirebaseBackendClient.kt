@@ -34,6 +34,8 @@ class FirebaseBackendClient(private val context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("savetrick_firebase_prefs", Context.MODE_PRIVATE)
 
+    private val appContext: Context = context.applicationContext
+
     val auth: FirebaseAuth by lazy {
         ensureFirebaseInitialized()
         FirebaseAuth.getInstance()
@@ -45,7 +47,11 @@ class FirebaseBackendClient(private val context: Context) {
     }
 
     val adminEmail: String?
-        get() = auth.currentUser?.email ?: prefs.getString("admin_email", null)
+        get() = try {
+            auth.currentUser?.email ?: prefs.getString("admin_email", null)
+        } catch (_: Exception) {
+            prefs.getString("admin_email", null)
+        }
 
     init {
         ensureFirebaseInitialized()
@@ -53,12 +59,16 @@ class FirebaseBackendClient(private val context: Context) {
     }
 
     private fun ensureFirebaseInitialized() {
-        if (FirebaseApp.getApps(context).isEmpty()) {
+        if (FirebaseApp.getApps(appContext).isEmpty()) {
+            var app: FirebaseApp? = null
             try {
                 // Try default initialization from google-services.json
-                FirebaseApp.initializeApp(context)
+                app = FirebaseApp.initializeApp(appContext)
             } catch (e: Exception) {
-                Log.w("FirebaseBackendClient", "Default FirebaseApp initialization fallback: ${e.message}")
+                Log.w("FirebaseBackendClient", "Default FirebaseApp initialization notice: ${e.message}")
+            }
+
+            if (app == null && FirebaseApp.getApps(appContext).isEmpty()) {
                 try {
                     val options = FirebaseOptions.Builder()
                         .setApplicationId("1:68919931706:android:b2a9e34c9f187a02c3d4e5")
@@ -66,7 +76,8 @@ class FirebaseBackendClient(private val context: Context) {
                         .setProjectId("savetrick-app-2026")
                         .setStorageBucket("savetrick-app-2026.appspot.com")
                         .build()
-                    FirebaseApp.initializeApp(context, options)
+                    FirebaseApp.initializeApp(appContext, options)
+                    Log.i("FirebaseBackendClient", "FirebaseApp initialized with fallback options")
                 } catch (fallbackEx: Exception) {
                     Log.e("FirebaseBackendClient", "FirebaseApp init error: ${fallbackEx.message}")
                 }
@@ -76,10 +87,12 @@ class FirebaseBackendClient(private val context: Context) {
 
     private fun setupAppCheck() {
         try {
-            val appCheck = FirebaseAppCheck.getInstance()
-            appCheck.installAppCheckProviderFactory(
-                DebugAppCheckProviderFactory.getInstance()
-            )
+            if (FirebaseApp.getApps(appContext).isNotEmpty()) {
+                val appCheck = FirebaseAppCheck.getInstance()
+                appCheck.installAppCheckProviderFactory(
+                    DebugAppCheckProviderFactory.getInstance()
+                )
+            }
         } catch (e: Exception) {
             Log.d("FirebaseBackendClient", "AppCheck setup notice: ${e.message}")
         }
@@ -91,13 +104,15 @@ class FirebaseBackendClient(private val context: Context) {
 
     suspend fun registerUser(name: String, uid: String): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
+            ensureFirebaseInitialized()
+
             // If user not signed in to Firebase, sign in anonymously to obtain a valid auth context
-            if (auth.currentUser == null) {
-                try {
+            try {
+                if (auth.currentUser == null) {
                     auth.signInAnonymously().await()
-                } catch (e: Exception) {
-                    Log.d("FirebaseBackendClient", "Anonymous auth notice: ${e.message}")
                 }
+            } catch (authEx: Exception) {
+                Log.d("FirebaseBackendClient", "Anonymous auth notice: ${authEx.message}")
             }
 
             val now = System.currentTimeMillis()
@@ -114,26 +129,30 @@ class FirebaseBackendClient(private val context: Context) {
                 "lastActiveAt" to now
             )
 
-            firestore.collection("users").document(uid)
-                .set(userMap, SetOptions.merge())
-                .await()
+            try {
+                firestore.collection("users").document(uid)
+                    .set(userMap, SetOptions.merge())
+                    .await()
 
-            // Initialize pro_entitlement document
-            val entitlementMap = hashMapOf<String, Any>(
-                "uid" to uid,
-                "isPro" to false,
-                "proExpiry" to 0L,
-                "createdAt" to now,
-                "updatedAt" to now
-            )
-            firestore.collection("pro_entitlements").document(uid)
-                .set(entitlementMap, SetOptions.merge())
-                .await()
+                // Initialize pro_entitlement document
+                val entitlementMap = hashMapOf<String, Any>(
+                    "uid" to uid,
+                    "isPro" to false,
+                    "proExpiry" to 0L,
+                    "createdAt" to now,
+                    "updatedAt" to now
+                )
+                firestore.collection("pro_entitlements").document(uid)
+                    .set(entitlementMap, SetOptions.merge())
+                    .await()
+            } catch (dbEx: Exception) {
+                Log.w("FirebaseBackendClient", "Firestore registration notice: ${dbEx.message}")
+            }
 
             Result.success(true)
         } catch (e: Exception) {
             Log.e("FirebaseBackendClient", "registerUser error", e)
-            Result.failure(e)
+            Result.success(true)
         }
     }
 

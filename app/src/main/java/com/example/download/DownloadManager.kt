@@ -332,11 +332,26 @@ class DownloadManager private constructor(private val context: Context) {
 
     private fun getTargetDirectory(): File {
         val dest = preferences.getStorageDestination()
-        return if (dest == "downloads_public") {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val dir = if (dest == "downloads_public") {
+            try {
+                val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val saveTrickDir = File(publicDir, "SaveTrick")
+                if (!saveTrickDir.exists()) saveTrickDir.mkdirs()
+                if (saveTrickDir.exists() && saveTrickDir.canWrite()) {
+                    saveTrickDir
+                } else {
+                    File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir, "SaveTrick")
+                }
+            } catch (_: Exception) {
+                File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir, "SaveTrick")
+            }
         } else {
             File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir, "SaveTrick")
         }
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return dir
     }
 
     companion object {

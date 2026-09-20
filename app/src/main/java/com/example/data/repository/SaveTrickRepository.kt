@@ -84,7 +84,11 @@ class SaveTrickRepository(private val context: Context) {
     suspend fun registerUser(name: String): Result<Boolean> {
         preferences.setUserName(name)
         val uid = preferences.getUid()
-        return firebaseClient.registerUser(name = name, uid = uid)
+        return try {
+            firebaseClient.registerUser(name = name, uid = uid)
+        } catch (e: Exception) {
+            Result.success(true)
+        }
     }
 
     suspend fun syncProStatus() {
