@@ -1,4 +1,4 @@
-name: Build workflow
+name: Build Android APK
 
 on:
   push:
@@ -7,56 +7,86 @@ on:
     branches: ["main", "master"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Debug APK
     runs-on: ubuntu-latest
+
     steps:
-      - name: 1. Checkout repository
+      - name: 1. Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 2. Setup Java 17
+      - name: 2. Set up Java 17 Toolchain
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
-      - name: 3. Setup Android SDK
+      - name: 3. Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: 4. Setup Gradle 9.3.1
+      - name: 4. Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.3.1"
 
-      - name: Setup Keystore and Environment
+      - name: 5. Prepare Build Environment & Credentials
         run: |
+          # Set up debug keystore if encoded or generate standard debug keystore
           if [ -f "debug.keystore.base64" ]; then
             base64 -d debug.keystore.base64 > debug.keystore
           elif [ ! -f "debug.keystore" ]; then
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
+
+          # Ensure .env exists for secret buildconfig fields
           touch .env
+
+          # Ensure fallback google-services.json if missing in repository
           if [ ! -f "app/google-services.json" ]; then
+            mkdir -p app
             echo '{"project_info":{"project_number":"0","project_id":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0"},"api_key":[{}]}]}' > app/google-services.json || true
           fi
-          yes | sdkmanager --licenses || true
 
-      - name: 5, 6 & 7. Detect Gradle Wrapper and Build APK
+          # Accept SDK licenses and ensure SDK platform 36 & build-tools are present
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+
+      - name: 6. Make Gradle Wrapper Executable
         run: |
-          if [ -f "./gradlew" ] && [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+          if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
-            echo "Using Gradle Wrapper..."
-            ./gradlew assembleDebug --stacktrace
           else
-            echo "Gradle wrapper not found or broken. Using Gradle 9.3.1 directly..."
-            gradle assembleDebug --stacktrace
+            echo "::warning ::Gradle wrapper not found, generating wrapper via gradle..."
+            gradle wrapper --gradle-version 9.3.1
+            chmod +x ./gradlew
           fi
 
-      - name: 8. Upload APK Artifact
+      - name: 7. Execute assembleDebug
+        run: |
+          echo "Starting build with Gradle wrapper..."
+          ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
+
+      - name: 8. Verify Generated APK
+        id: verify-apk
+        run: |
+          APK_COUNT=$(find app/build/outputs/apk/debug -name "*.apk" | wc -l)
+          if [ "$APK_COUNT" -eq "0" ]; then
+            echo "::error ::No APK generated in app/build/outputs/apk/debug!"
+            exit 1
+          fi
+          echo "Found APK files:"
+          ls -lh app/build/outputs/apk/debug/*.apk
+
+      - name: 9. Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: SaveTrick-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
-
+          if-no-files-found: error
