@@ -21,15 +21,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: 3. Setup Gradle 9.3.1
+      - name: 3. Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 4. Setup Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.3.1"
 
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: 4. Create debug keystore and environment
+      - name: Setup Keystore and Environment
         run: |
           if [ -f "debug.keystore.base64" ]; then
             base64 -d debug.keystore.base64 > debug.keystore
@@ -40,16 +40,23 @@ jobs:
           if [ ! -f "app/google-services.json" ]; then
             echo '{"project_info":{"project_number":"0","project_id":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0"},"api_key":[{}]}]}' > app/google-services.json || true
           fi
+          yes | sdkmanager --licenses || true
 
-      - name: Accept Android SDK Licenses
-        run: yes | sdkmanager --licenses || true
+      - name: 5, 6 & 7. Detect Gradle Wrapper and Build APK
+        run: |
+          if [ -f "./gradlew" ] && [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            chmod +x ./gradlew
+            echo "Using Gradle Wrapper..."
+            ./gradlew assembleDebug --stacktrace
+          else
+            echo "Gradle wrapper not found or broken. Using Gradle 9.3.1 directly..."
+            gradle assembleDebug --stacktrace
+          fi
 
-      - name: 5 & 6. Assemble Debug APK
-        run: ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
-
-      - name: 7 & 8. Upload APK Artifact
+      - name: 8. Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SaveTrick-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
+
