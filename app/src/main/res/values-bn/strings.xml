@@ -1,0 +1,123 @@
+<resources>
+    <string name="app_name">SaveTrick</string>
+    <string name="app_tagline">টিকটক ভিডিও ডাউনলোডার ও সেভার</string>
+    <string name="app_version">2.5.7</string>
+    <string name="developer_name">Prachurjo Sorkar Porosh</string>
+    <string name="developer_website">https://prachurjo.pro.bd/</string>
+    <string name="copyright_notice">© 2026 SaveTrick. সর্বস্বত্ব সংরক্ষিত।</string>
+    <string name="app_description">SaveTrick একটি আধুনিক ভিডিও সেভিং অ্যাপ্লিকেশন যা আপনার ডিভাইসে সহজে মিডিয়া সংরক্ষণ করার সুবিধা দেয়।</string>
+
+    <!-- Error Messages -->
+    <string name="error_unsupported_link">এই লিংকটি সাপোর্ট করে না। অনুগ্রহ করে একটি TikTok লিংক দিন।</string>
+    <string name="error_empty_url">অনুগ্রহ করে একটি টিকটক লিংক দিন।</string>
+    <string name="error_resolution_failed">মিডিয়া রেজলভ করা যায়নি। লিংক বা ইন্টারনেট চেক করুন।</string>
+    <string name="error_download_failed">ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।</string>
+    <string name="error_network">নেটওয়ার্ক সমস্যা। অনুগ্রহ করে ইন্টারনেট সংযোগ পরীক্ষা করুন।</string>
+    <string name="error_backend_unavailable">সার্ভার সেবা সাময়িকভাবে অনুপলব্ধ। পুনরায় চেষ্টা করতে ট্যাপ করুন।</string>
+
+    <!-- Navigation -->
+    <string name="nav_downloader">ডাউনলোডার</string>
+    <string name="nav_library">লাইব্রেরি</string>
+    <string name="nav_settings">সেটিংস</string>
+
+    <!-- Downloader Screen -->
+    <string name="url_input_hint">টিকটক লিংক পেস্ট করুন...</string>
+    <string name="btn_paste">পেস্ট</string>
+    <string name="btn_clear">মুছুন</string>
+    <string name="btn_resolve">ডাউনলোড / রেজলভ</string>
+    <string name="resolving">মিডিয়া বিশ্লেষণ করা হচ্ছে...</string>
+    <string name="tab_single_link">একটি লিংক</string>
+    <string name="tab_batch">ব্যাচ ডাউনলোডার</string>
+    <string name="download_video">ভিডিও ডাউনলোড</string>
+    <string name="download_audio">অডিও ডাউনলোড</string>
+    <string name="download_all_images">সব ছবি ডাউনলোড (%d)</string>
+    <string name="download_single_image">ডাউনলোড</string>
+    <string name="media_type_video">টিকটক ভিডিও</string>
+    <string name="media_type_slideshow">ফটো স্লাইডশো (%d টি ছবি)</string>
+    <string name="already_downloading">এই আইটেমটি ইতিমধ্যে ডাউনলোড হচ্ছে।</string>
+    <string name="already_downloaded">এই আইটেমটি ইতিমধ্যে ডাউনলোড করা হয়েছে।</string>
+
+    <!-- Library Screen -->
+    <string name="tab_downloading">ডাউনলোড হচ্ছে</string>
+    <string name="tab_downloaded">ডাউনলোডকৃত</string>
+    <string name="tab_history">ইতিহাস</string>
+    <string name="stat_downloads">মোট ডাউনলোড</string>
+    <string name="stat_videos">ভিডিও</string>
+    <string name="stat_audios">অডিও</string>
+    <string name="stat_storage">স্টোরেজ</string>
+    <string name="no_downloading">কোনো সক্রিয় ডাউনলোড নেই</string>
+    <string name="no_downloaded">এখনো কোনো ডাউনলোডকৃত ফাইল নেই</string>
+    <string name="no_history">কোনো ইতিহাস নেই</string>
+    <string name="action_cancel">বাতিল</string>
+    <string name="action_open">খুলুন</string>
+    <string name="action_share">শেয়ার</string>
+    <string name="action_delete">মুছুন</string>
+    <string name="action_retry">পুনরায় চেষ্টা</string>
+    <string name="delete_confirm_title">আইটেম মুছুন</string>
+    <string name="delete_confirm_message">আপনি কি নিশ্চিত যে এই ফাইলটি মুছে ফেলতে চান?</string>
+    <string name="btn_confirm">মুছুন</string>
+    <string name="btn_dismiss">বাতিল</string>
+
+    <!-- Settings Screen -->
+    <string name="profile_header">ইউজার প্রোফাইল</string>
+    <string name="uid_label">SaveTrick ইউআইডি</string>
+    <string name="uid_copied">ইউআইডি ক্লিপবোর্ডে কপি করা হয়েছে</string>
+    <string name="edit_name">নাম পরিবর্তন</string>
+    <string name="save_name">সংরক্ষণ</string>
+    <string name="preferences_header">পছন্দসমূহ</string>
+    <string name="theme_mode">থিম মোড</string>
+    <string name="theme_light">লাইট</string>
+    <string name="theme_dark">ডার্ক</string>
+    <string name="theme_system">সিস্টেম ডিফল্ট</string>
+    <string name="default_resolution">ডিফল্ট রেজোলিউশন</string>
+    <string name="app_language">অ্যাপের ভাষা</string>
+    <string name="lang_english">English (ইংরেজি)</string>
+    <string name="lang_bengali">বাংলা</string>
+    <string name="storage_destination">স্টোরেজ ফোল্ডার</string>
+    <string name="startup_animations">স্টার্টআপ অ্যানিমেশন</string>
+    <string name="download_notifications">ডাউনলোড নোটিফিকেশন</string>
+    <string name="wifi_only">কেবলমাত্র ওয়াই-ফাই</string>
+    <string name="data_header">ডাটা ব্যবস্থাপনা</string>
+    <string name="clear_cache">অস্থায়ী ক্যাশ মুছুন</string>
+    <string name="cache_cleared">ক্যাশ সফলভাবে মুছে ফেলা হয়েছে</string>
+    <string name="clear_history">ডাউনলোড হিস্ট্রি মুছুন</string>
+    <string name="history_cleared">হিস্ট্রি মুছে ফেলা হয়েছে</string>
+    <string name="about_header">SaveTrick সম্পর্কে</string>
+    <string name="privacy_policy">গোপনীয়তা নীতি</string>
+    <string name="terms_of_service">ব্যবহারের শর্তাবলী</string>
+
+    <!-- Pro & Ads -->
+    <string name="pro_status_badge">প্রো সক্রিয়</string>
+    <string name="free_status_badge">ফ্রি</string>
+    <string name="upgrade_pro">প্রো সংস্করণে আপগ্রেড করুন</string>
+    <string name="pro_benefit_desc">সমস্ত বিজ্ঞাপন বন্ধ থাকবে। একই দ্রুত ডাউনলোড গতি।</string>
+    <string name="sponsored">স্পন্সরড</string>
+    <string name="ad_placeholder_title">SaveTrick প্রো এর সাথে দ্রুত এবং নির্বিঘ্নে সেভ করুন</string>
+    <string name="ad_placeholder_subtitle">সমস্ত বিজ্ঞাপন সরাতে এবং প্রজেক্টকে সমর্থন দিতে প্রো নিন।</string>
+
+    <!-- Payments -->
+    <string name="payment_title">SaveTrick প্রো আপগ্রেড</string>
+    <string name="payment_desc">বিজ্ঞাপনমুক্ত অভিজ্ঞতা উপভোগ করুন। ডাউনলোড সবসময় সবার জন্য সম্পূর্ণ ফ্রি।</string>
+    <string name="select_provider">পেমেন্ট মেথড নির্বাচন করুন</string>
+    <string name="provider_bkash">বিকাশ (bKash)</string>
+    <string name="provider_nagad">নগদ (Nagad)</string>
+    <string name="send_money_instructions">%1$s টাকা %2$s (%3$s) নম্বরে Send Money করুন এবং নিচে TrxID লিখুন।</string>
+    <string name="trx_id_hint">ট্রানজ্যাকশন আইডি (TrxID)</string>
+    <string name="btn_submit_payment">যাচাইয়ের জন্য পেমেন্ট জমা দিন</string>
+    <string name="payment_submitted">পেমেন্ট জমা দেওয়া হয়েছে! অ্যাডমিন যাচাই করে প্রো চালু করবেন।</string>
+
+    <!-- First Launch Onboarding -->
+    <string name="welcome_title">SaveTrick এ স্বাগতম</string>
+    <string name="welcome_subtitle">দ্রুত ও নির্ভরযোগ্য টিকটক ভিডিও ও স্লাইডশো সেভার</string>
+    <string name="enter_your_name">শুরু করতে আপনার নাম লিখুন</string>
+    <string name="name_hint">আপনার নাম</string>
+    <string name="btn_continue">এগিয়ে যান</string>
+
+    <!-- Admin -->
+    <string name="admin_portal_title">অ্যাডমিন পোর্টাল</string>
+    <string name="admin_email_hint">অ্যাডমিন ইমেইল</string>
+    <string name="admin_password_hint">অ্যাডমিন পাসওয়ার্ড</string>
+    <string name="btn_admin_login">অ্যাডমিন লগইন</string>
+    <string name="admin_login_error">লগইন ব্যর্থ হয়েছে। ইমেইল, পাসওয়ার্ড এবং অ্যাডমিন রোল চেক করুন।</string>
+    <string name="admin_logout">লগআউট</string>
+</resources>

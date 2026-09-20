@@ -1,0 +1,123 @@
+<resources>
+    <string name="app_name">SaveTrick</string>
+    <string name="app_tagline">TikTok Video Downloader &amp; Saver</string>
+    <string name="app_version">2.5.7</string>
+    <string name="developer_name">Prachurjo Sorkar Porosh</string>
+    <string name="developer_website">https://prachurjo.pro.bd/</string>
+    <string name="copyright_notice">© 2026 SaveTrick. All rights reserved.</string>
+    <string name="app_description">SaveTrick is a modern video-saving application designed to provide a simple and convenient way to save supported media locally.</string>
+
+    <!-- Error Messages -->
+    <string name="error_unsupported_link">This link is not supported. Please enter a TikTok link.</string>
+    <string name="error_empty_url">Please paste or enter a TikTok URL.</string>
+    <string name="error_resolution_failed">Failed to resolve media. Please check the link or your network.</string>
+    <string name="error_download_failed">Download failed. Please try again.</string>
+    <string name="error_network">Network error. Please check your internet connection.</string>
+    <string name="error_backend_unavailable">Backend service is currently unavailable. Tap to retry.</string>
+
+    <!-- Navigation -->
+    <string name="nav_downloader">Downloader</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Downloader Screen -->
+    <string name="url_input_hint">Paste TikTok URL...</string>
+    <string name="btn_paste">Paste</string>
+    <string name="btn_clear">Clear</string>
+    <string name="btn_resolve">Download / Resolve</string>
+    <string name="resolving">Resolving media...</string>
+    <string name="tab_single_link">Single Link</string>
+    <string name="tab_batch">Batch Downloader</string>
+    <string name="download_video">Download Video</string>
+    <string name="download_audio">Download Audio</string>
+    <string name="download_all_images">Download All (%d)</string>
+    <string name="download_single_image">Download</string>
+    <string name="media_type_video">TikTok Video</string>
+    <string name="media_type_slideshow">Photo Slideshow (%d images)</string>
+    <string name="already_downloading">This item is already downloading.</string>
+    <string name="already_downloaded">This item has already been downloaded.</string>
+
+    <!-- Library Screen -->
+    <string name="tab_downloading">Downloading</string>
+    <string name="tab_downloaded">Downloaded</string>
+    <string name="tab_history">History</string>
+    <string name="stat_downloads">Downloads</string>
+    <string name="stat_videos">Videos</string>
+    <string name="stat_audios">Audios</string>
+    <string name="stat_storage">Storage</string>
+    <string name="no_downloading">No active downloads</string>
+    <string name="no_downloaded">No downloaded files yet</string>
+    <string name="no_history">No download history</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_open">Open</string>
+    <string name="action_share">Share</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_retry">Retry</string>
+    <string name="delete_confirm_title">Delete Item</string>
+    <string name="delete_confirm_message">Are you sure you want to delete this file and remove its record?</string>
+    <string name="btn_confirm">Delete</string>
+    <string name="btn_dismiss">Cancel</string>
+
+    <!-- Settings Screen -->
+    <string name="profile_header">User Profile</string>
+    <string name="uid_label">SaveTrick UID</string>
+    <string name="uid_copied">UID copied to clipboard</string>
+    <string name="edit_name">Edit Name</string>
+    <string name="save_name">Save</string>
+    <string name="preferences_header">Preferences</string>
+    <string name="theme_mode">Theme Mode</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System Default</string>
+    <string name="default_resolution">Default Resolution</string>
+    <string name="app_language">Application Language</string>
+    <string name="lang_english">English</string>
+    <string name="lang_bengali">বাংলা (Bengali)</string>
+    <string name="storage_destination">Storage Destination</string>
+    <string name="startup_animations">Startup Animations</string>
+    <string name="download_notifications">Download Notifications</string>
+    <string name="wifi_only">Wi-Fi Only Downloads</string>
+    <string name="data_header">Data Management</string>
+    <string name="clear_cache">Clear Temporary Cache</string>
+    <string name="cache_cleared">Temporary cache cleared successfully</string>
+    <string name="clear_history">Clear Download History</string>
+    <string name="history_cleared">History records cleared</string>
+    <string name="about_header">About SaveTrick</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+
+    <!-- Pro & Ads -->
+    <string name="pro_status_badge">PRO ACTIVE</string>
+    <string name="free_status_badge">FREE</string>
+    <string name="upgrade_pro">Upgrade to Pro</string>
+    <string name="pro_benefit_desc">Remove all ads. Same high-speed downloads.</string>
+    <string name="sponsored">Sponsored</string>
+    <string name="ad_placeholder_title">Save Faster with SaveTrick Pro</string>
+    <string name="ad_placeholder_subtitle">Upgrade to remove all ads while supporting future development.</string>
+
+    <!-- Payments -->
+    <string name="payment_title">Upgrade to SaveTrick PRO</string>
+    <string name="payment_desc">Enjoy an ad-free experience. Full download functionality is always free.</string>
+    <string name="select_provider">Select Payment Method</string>
+    <string name="provider_bkash">bKash</string>
+    <string name="provider_nagad">Nagad</string>
+    <string name="send_money_instructions">Send %1$s BDT to %2$s (%3$s) via Send Money, then enter your TrxID below.</string>
+    <string name="trx_id_hint">Transaction ID (TrxID)</string>
+    <string name="btn_submit_payment">Submit Payment for Review</string>
+    <string name="payment_submitted">Payment submitted! Admin will verify and activate Pro.</string>
+
+    <!-- First Launch Onboarding -->
+    <string name="welcome_title">Welcome to SaveTrick</string>
+    <string name="welcome_subtitle">Fast, clean TikTok Video &amp; Slideshow Saver</string>
+    <string name="enter_your_name">Enter your display name to begin</string>
+    <string name="name_hint">Your Name</string>
+    <string name="btn_continue">Continue</string>
+
+    <!-- Admin -->
+    <string name="admin_portal_title">Admin Portal</string>
+    <string name="admin_email_hint">Admin Email</string>
+    <string name="admin_password_hint">Admin Password</string>
+    <string name="btn_admin_login">Sign In as Admin</string>
+    <string name="admin_login_error">Authentication failed. Check email, password, and admin role.</string>
+    <string name="admin_logout">Sign Out</string>
+</resources>

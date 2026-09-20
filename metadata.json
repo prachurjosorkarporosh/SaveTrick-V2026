@@ -1,0 +1,6 @@
+{
+  "name": "SaveTrick",
+  "description": "SaveTrick is a TikTok Video Downloader & Saver. Save TikTok videos, photo slideshows, and audio directly to your device.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

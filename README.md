@@ -1,11 +1,29 @@
-<div align="center">
+# SaveTrick — TikTok Video Downloader & Saver
+**Version 2.5.7**  
+**Developer:** Prachurjo Sorkar Porosh  
+**Website:** [https://prachurjo.pro.bd/](https://prachurjo.pro.bd/)  
+**Copyright:** © 2026 SaveTrick. All rights reserved.
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+---
 
-  <h1>Built with AI Studio</h2>
+## Overview
+SaveTrick is a production-quality Android application built with Kotlin and Jetpack Compose for saving TikTok videos, photo slideshows, and audio directly to the user's device.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+### Supported Formats
+- **VIDEO**: TikTok video preview with Media3 ExoPlayer, aspect-ratio preservation, video download, and audio stream extraction.
+- **PHOTO_SLIDESHOW**: Vertical image presentation with original aspect ratios, individual image download, and "Download All" (generating individual records).
+- **AUDIO**: High quality audio extraction when a real audio stream exists.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+### Architecture & Tech Stack
+- **Kotlin & Jetpack Compose**: Material 3 theming (Light, Dark, System Default) with Plus Jakarta Sans typography.
+- **Room Database**: Persistent download queue, stats, and history.
+- **Real Streaming Download Engine**: OkHttp byte-streaming, real progress tracking, accurate transfer speeds, and duplicate/cancellation management.
+- **Localization**: Full English and Bengali language support.
+- **Admin Portal**: Hidden 4-tap trigger, email/password Supabase auth with role verification, user management, audit logging, and payment verification.
 
-</div>
+## Building the APK
+To build the debug APK locally:
+```bash
+gradle assembleDebug
+```
+The resulting APK will be placed in `app/build/outputs/apk/debug/`.
