@@ -28,33 +28,42 @@ jobs:
       - name: 3. Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: 4. Set up Gradle 9.3.1
+      - name: 4. Accept Android SDK Licenses & Prepare Tools
+        run: |
+          if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          fi
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools" || true
+
+      - name: 5. Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.3.1"
 
-      - name: 5. Prepare Keystore & Dependencies
+      - name: 6. Prepare Keystore & Dependencies
         run: |
           # Create debug.keystore if base64 exists or generate fresh debug keystore
           if [ -f "debug.keystore.base64" ]; then
             base64 -d debug.keystore.base64 > debug.keystore
           elif [ ! -f "debug.keystore" ]; then
-            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -noprompt
           fi
 
-          # Secrets dummy file to satisfy buildConfig
+          # Ensure .env and .env.example files exist to satisfy Secrets Gradle Plugin
           touch .env
+          touch .env.example
 
-          # Fallback google-services.json
-          if [ ! -f "app/google-services.json" ]; then
+          # Setup google-services.json
+          if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
             mkdir -p app
-            echo '{"project_info":{"project_number":"0","project_id":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0"},"api_key":[{}]}]}' > app/google-services.json || true
+            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > app/google-services.json
+          elif [ ! -f "app/google-services.json" ]; then
+            mkdir -p app
+            echo '{"project_info":{"project_number":"1234567890","project_id":"savetrick-app-2026","storage_bucket":"savetrick-app-2026.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:1234567890:android:b2a9e34c9f187a02c3d4e5","android_client_info":{"package_name":"com.prachurjo.savetrick.app"}},"api_key":[{"current_key":"dummy_key"}]}],"configuration_version":"1"}' > app/google-services.json
           fi
 
-          # Accept SDK licenses
-          yes | sdkmanager --licenses || true
-
-      - name: 6. Make gradlew executable
+      - name: 7. Make gradlew executable
         run: |
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
@@ -63,7 +72,7 @@ jobs:
             chmod +x ./gradlew
           fi
 
-      - name: 7. Build Debug APK
+      - name: 8. Build Debug APK
         run: |
           if [ -f "./gradlew" ] && [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
             ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
@@ -71,21 +80,29 @@ jobs:
             gradle assembleDebug --no-daemon --no-configuration-cache --stacktrace
           fi
 
-      - name: 8. Verify APK Generation
+      - name: 9. Verify and Copy APK
         run: |
           mkdir -p build-output
-          cp $(find app/build/outputs/apk/debug -name "*.apk" | head -n 1) build-output/SaveTrick-debug.apk || cp app/build/outputs/apk/debug/*.apk build-output/ || true
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" -type f | head -n 1)
+          if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
+            cp "$APK_PATH" build-output/SaveTrick-debug.apk
+            echo "✅ Successfully generated SaveTrick-debug.apk"
+          else
+            echo "❌ Failed to locate generated APK in app/build/outputs/apk/debug"
+            exit 1
+          fi
           ls -lh build-output/
 
-      - name: 9. Upload Debug APK Artifact
+      - name: 10. Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SaveTrick-APK
-          path: build-output/*.apk
+          path: build-output/SaveTrick-debug.apk
           retention-days: 14
 
-      - name: 10. Auto-create GitHub Release (Direct Download)
+      - name: 11. Auto-create GitHub Release (Direct Download)
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        continue-on-error: true
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v2.5.7-build-${{ github.run_number }}
@@ -93,6 +110,6 @@ jobs:
           body: |
             ### 📲 SaveTrick Android APK
             স্বয়ংক্রিয়ভাবে তৈরি হওয়া **Debug APK** নিচে সংযুক্ত করা হয়েছে।
-          files: build-output/*.apk
+          files: build-output/SaveTrick-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
