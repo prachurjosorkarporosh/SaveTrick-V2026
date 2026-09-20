@@ -7,6 +7,9 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,14 +50,36 @@ jobs:
       - name: Build Debug and Release APK
         run: ./gradlew assembleDebug assembleRelease --no-daemon --no-configuration-cache --stacktrace
 
+      - name: Prepare APKs with version name
+        run: |
+          mkdir -p release-apks
+          cp app/build/outputs/apk/release/app-release.apk release-apks/SaveTrick-v2.5.7-release.apk || cp app/build/outputs/apk/release/*.apk release-apks/ || true
+          cp app/build/outputs/apk/debug/app-debug.apk release-apks/SaveTrick-v2.5.7-debug.apk || cp app/build/outputs/apk/debug/*.apk release-apks/ || true
+
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: SaveTrick-Debug-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: release-apks/*debug.apk
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: SaveTrick-Release-APK
-          path: app/build/outputs/apk/release/*.apk
+          path: release-apks/*release.apk
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.5.7-${{ github.run_number }}
+          name: SaveTrick v2.5.7 (Build ${{ github.run_number }})
+          body: |
+            ## SaveTrick APK Download
+            - **Release APK**: Production-ready APK
+            - **Debug APK**: Debug testing APK
+            Built automatically with GitHub Actions.
+          files: release-apks/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
