@@ -38,5 +38,13 @@ class ExampleRobolectricTest {
         assertFalse(UrlValidator.isTikTokUrl("not_a_valid_url"))
         assertFalse(UrlValidator.isTikTokUrl(""))
     }
+
+    @Test
+    fun `verify bengali locale string resolution`() {
+        val baseContext = ApplicationProvider.getApplicationContext<Context>()
+        val bnContext = com.example.util.LocaleHelper.applyLocale(baseContext, "bn")
+        val downloadingText = bnContext.getString(R.string.tab_downloading)
+        assertEquals("ডাউনলোড হচ্ছে", downloadingText)
+    }
 }
 

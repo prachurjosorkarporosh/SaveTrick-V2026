@@ -202,7 +202,7 @@ fun DownloaderScreen(
                     },
                     placeholder = {
                         Text(
-                            text = if (selectedTab == 0) stringResource(R.string.url_input_hint) else "Paste multiple TikTok URLs (one per line)...",
+                            text = if (selectedTab == 0) stringResource(R.string.url_input_hint) else stringResource(R.string.batch_url_input_hint),
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp)
                         )
                     },
@@ -438,7 +438,7 @@ fun DownloaderScreen(
                                                 ).show()
                                             }
                                         )
-                                        Toast.makeText(context, "Download started", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.download_started), Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 shape = RoundedCornerShape(10.dp),
@@ -477,7 +477,7 @@ fun DownloaderScreen(
                                                 ).show()
                                             }
                                         )
-                                        Toast.makeText(context, "Audio download started", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.audio_download_started), Toast.LENGTH_SHORT).show()
                                     },
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier
@@ -517,7 +517,7 @@ fun DownloaderScreen(
                                 thumbnail = imgUrl,
                                 mediaType = MediaType.IMAGE
                             )
-                            Toast.makeText(context, "Image #$idx downloading", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.image_downloading, idx), Toast.LENGTH_SHORT).show()
                         },
                         onDownloadAllImages = {
                             result.images.forEachIndexed { index, imgUrl ->
@@ -531,7 +531,7 @@ fun DownloaderScreen(
                             }
                             Toast.makeText(
                                 context,
-                                "Queued ${result.images.size} images for download",
+                                context.getString(R.string.queued_images_download, result.images.size),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }

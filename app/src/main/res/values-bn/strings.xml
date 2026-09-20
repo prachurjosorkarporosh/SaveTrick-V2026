@@ -34,8 +34,14 @@
     <string name="download_single_image">ডাউনলোড</string>
     <string name="media_type_video">টিকটক ভিডিও</string>
     <string name="media_type_slideshow">ফটো স্লাইডশো (%d টি ছবি)</string>
+    <string name="batch_url_input_hint">একাধিক টিকটক লিংক দিন (প্রতি লাইনে একটি)...</string>
     <string name="already_downloading">এই আইটেমটি ইতিমধ্যে ডাউনলোড হচ্ছে।</string>
     <string name="already_downloaded">এই আইটেমটি ইতিমধ্যে ডাউনলোড করা হয়েছে।</string>
+    <string name="download_started">ডাউনলোড শুরু হয়েছে</string>
+    <string name="audio_download_started">অডিও ডাউনলোড শুরু হয়েছে</string>
+    <string name="image_downloading">ছবি #%d ডাউনলোড হচ্ছে</string>
+    <string name="queued_images_download">%d টি ছবি ডাউনলোডের জন্য প্রস্তুত</string>
+    <string name="retrying_download">পুনরায় ডাউনলোডের চেষ্টা চলছে...</string>
 
     <!-- Library Screen -->
     <string name="tab_downloading">ডাউনলোড হচ্ছে</string>
@@ -74,6 +80,8 @@
     <string name="lang_english">English (ইংরেজি)</string>
     <string name="lang_bengali">বাংলা</string>
     <string name="storage_destination">স্টোরেজ ফোল্ডার</string>
+    <string name="storage_public_downloads">ডাউনলোড ফোল্ডার (ডিভাইস পাবলিক)</string>
+    <string name="storage_internal">অ্যাপের অভ্যন্তরীণ স্টোরেজ</string>
     <string name="startup_animations">স্টার্টআপ অ্যানিমেশন</string>
     <string name="download_notifications">ডাউনলোড নোটিফিকেশন</string>
     <string name="wifi_only">কেবলমাত্র ওয়াই-ফাই</string>

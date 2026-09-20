@@ -544,6 +544,8 @@ fun SettingsScreen(
                                 .clickable {
                                     repository.preferences.setLanguage(code)
                                     showLanguageDialog = false
+                                    val msg = if (code == "bn") "ভাষা পরিবর্তন করে বাংলা করা হয়েছে" else "Language changed to English"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                 }
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -553,6 +555,8 @@ fun SettingsScreen(
                                 onClick = {
                                     repository.preferences.setLanguage(code)
                                     showLanguageDialog = false
+                                    val msg = if (code == "bn") "ভাষা পরিবর্তন করে বাংলা করা হয়েছে" else "Language changed to English"
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -604,8 +608,8 @@ fun SettingsScreen(
     // Storage Dialog
     if (showStorageDialog) {
         val options = listOf(
-            "downloads_public" to "Downloads Folder (Device public)",
-            "app_internal" to "App Internal Storage"
+            "downloads_public" to stringResource(R.string.storage_public_downloads),
+            "app_internal" to stringResource(R.string.storage_internal)
         )
         AlertDialog(
             onDismissRequest = { showStorageDialog = false },

@@ -53,7 +53,12 @@ class UserPreferences(context: Context) {
         _themeFlow.value = mode
     }
 
-    fun getLanguage(): String = prefs.getString(KEY_LANG, "en") ?: "en"
+    fun getLanguage(): String {
+        val saved = prefs.getString(KEY_LANG, null)
+        if (!saved.isNullOrBlank()) return saved
+        val sysLang = java.util.Locale.getDefault().language
+        return if (sysLang.startsWith("bn")) "bn" else "en"
+    }
 
     fun setLanguage(lang: String) {
         prefs.edit().putString(KEY_LANG, lang).apply()

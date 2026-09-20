@@ -249,7 +249,7 @@ fun LibraryScreen(
                                             thumbnail = item.thumbnail,
                                             mediaType = mType
                                         )
-                                        Toast.makeText(context, "Retrying download...", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.retrying_download), Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }

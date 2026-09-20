@@ -34,8 +34,14 @@
     <string name="download_single_image">Download</string>
     <string name="media_type_video">TikTok Video</string>
     <string name="media_type_slideshow">Photo Slideshow (%d images)</string>
+    <string name="batch_url_input_hint">Paste multiple TikTok URLs (one per line)...</string>
     <string name="already_downloading">This item is already downloading.</string>
     <string name="already_downloaded">This item has already been downloaded.</string>
+    <string name="download_started">Download started</string>
+    <string name="audio_download_started">Audio download started</string>
+    <string name="image_downloading">Image #%d downloading</string>
+    <string name="queued_images_download">Queued %d images for download</string>
+    <string name="retrying_download">Retrying download...</string>
 
     <!-- Library Screen -->
     <string name="tab_downloading">Downloading</string>
@@ -74,6 +80,8 @@
     <string name="lang_english">English</string>
     <string name="lang_bengali">বাংলা (Bengali)</string>
     <string name="storage_destination">Storage Destination</string>
+    <string name="storage_public_downloads">Downloads Folder (Device public)</string>
+    <string name="storage_internal">App Internal Storage</string>
     <string name="startup_animations">Startup Animations</string>
     <string name="download_notifications">Download Notifications</string>
     <string name="wifi_only">Wi-Fi Only Downloads</string>
