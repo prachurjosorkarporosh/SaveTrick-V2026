@@ -18,6 +18,7 @@ import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 
 /**
@@ -109,7 +110,9 @@ class FirebaseBackendClient(private val context: Context) {
             // If user not signed in to Firebase, sign in anonymously to obtain a valid auth context
             try {
                 if (auth.currentUser == null) {
-                    auth.signInAnonymously().await()
+                    withTimeoutOrNull(2500L) {
+                        auth.signInAnonymously().await()
+                    }
                 }
             } catch (authEx: Exception) {
                 Log.d("FirebaseBackendClient", "Anonymous auth notice: ${authEx.message}")
@@ -130,21 +133,23 @@ class FirebaseBackendClient(private val context: Context) {
             )
 
             try {
-                firestore.collection("users").document(uid)
-                    .set(userMap, SetOptions.merge())
-                    .await()
+                withTimeoutOrNull(2500L) {
+                    firestore.collection("users").document(uid)
+                        .set(userMap, SetOptions.merge())
+                        .await()
 
-                // Initialize pro_entitlement document
-                val entitlementMap = hashMapOf<String, Any>(
-                    "uid" to uid,
-                    "isPro" to false,
-                    "proExpiry" to 0L,
-                    "createdAt" to now,
-                    "updatedAt" to now
-                )
-                firestore.collection("pro_entitlements").document(uid)
-                    .set(entitlementMap, SetOptions.merge())
-                    .await()
+                    // Initialize pro_entitlement document
+                    val entitlementMap = hashMapOf<String, Any>(
+                        "uid" to uid,
+                        "isPro" to false,
+                        "proExpiry" to 0L,
+                        "createdAt" to now,
+                        "updatedAt" to now
+                    )
+                    firestore.collection("pro_entitlements").document(uid)
+                        .set(entitlementMap, SetOptions.merge())
+                        .await()
+                }
             } catch (dbEx: Exception) {
                 Log.w("FirebaseBackendClient", "Firestore registration notice: ${dbEx.message}")
             }

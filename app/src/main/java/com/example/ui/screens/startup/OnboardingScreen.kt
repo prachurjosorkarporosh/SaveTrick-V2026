@@ -10,10 +10,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Person
@@ -26,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +48,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +60,7 @@ import com.example.ui.theme.ElectricCyan
 import com.example.ui.theme.ErrorRed
 import com.example.ui.theme.PlusJakartaSansFamily
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun OnboardingScreen(
@@ -68,22 +77,25 @@ fun OnboardingScreen(
 
     fun handleRegister() {
         val trimmed = nameInput.trim()
-        if (trimmed.isBlank()) {
-            errorMessage = "Please enter your name to continue."
-            return
-        }
+        val finalName = if (trimmed.isNotBlank()) trimmed else "User"
 
         errorMessage = null
         isLoading = true
 
+        // 1. Immediately save locally so the user is never blocked
+        repository.preferences.setUserName(finalName)
+        repository.preferences.setFirstLaunchCompleted()
+
         scope.launch {
-            val result = repository.registerUser(trimmed)
-            isLoading = false
-            result.onSuccess {
-                repository.preferences.setFirstLaunchCompleted()
+            try {
+                withTimeoutOrNull(2000L) {
+                    repository.registerUser(finalName)
+                }
+            } catch (_: Exception) {
+                // Ignore sync errors - local save already succeeded
+            } finally {
+                isLoading = false
                 onComplete()
-            }.onFailure { err ->
-                errorMessage = err.message ?: "Failed to connect to server. Please tap Retry."
             }
         }
     }
@@ -92,7 +104,9 @@ fun OnboardingScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 32.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -180,9 +194,20 @@ fun OnboardingScreen(
                             )
                         },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = { handleRegister() }
+                        ),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ElectricBlue
+                            focusedBorderColor = ElectricBlue,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            cursorColor = ElectricBlue
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -215,7 +240,7 @@ fun OnboardingScreen(
                             )
                         } else {
                             Text(
-                                text = if (errorMessage != null) "Retry" else stringResource(R.string.btn_continue),
+                                text = stringResource(R.string.btn_continue),
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -225,6 +250,25 @@ fun OnboardingScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                         }
+                    }
+
+                    TextButton(
+                        onClick = {
+                            val defaultName = if (nameInput.trim().isNotBlank()) nameInput.trim() else "User"
+                            repository.preferences.setUserName(defaultName)
+                            repository.preferences.setFirstLaunchCompleted()
+                            onComplete()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("onboarding_btn_skip")
+                    ) {
+                        Text(
+                            text = "Skip for now",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
                     }
                 }
             }

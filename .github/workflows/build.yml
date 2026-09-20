@@ -30,6 +30,10 @@ jobs:
 
       - name: 4. Accept Android SDK Licenses & Prepare Tools
         run: |
+          mkdir -p "$ANDROID_HOME/licenses" || true
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> "$ANDROID_HOME/licenses/android-sdk-preview-license"
           if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
             export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           fi
@@ -40,19 +44,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.3.1"
+          cache-read-only: false
 
       - name: 6. Prepare Keystore & Dependencies
         run: |
           # Create debug.keystore if base64 exists or generate fresh debug keystore
           if [ -f "debug.keystore.base64" ]; then
-            base64 -d debug.keystore.base64 > debug.keystore
-          elif [ ! -f "debug.keystore" ]; then
+            base64 -d debug.keystore.base64 > debug.keystore 2>/dev/null || base64 --decode debug.keystore.base64 > debug.keystore
+          fi
+          if [ ! -f "debug.keystore" ]; then
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" -noprompt
           fi
 
           # Ensure .env and .env.example files exist to satisfy Secrets Gradle Plugin
           touch .env
           touch .env.example
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
 
           # Setup google-services.json
           if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
@@ -63,32 +70,49 @@ jobs:
             echo '{"project_info":{"project_number":"1234567890","project_id":"savetrick-app-2026","storage_bucket":"savetrick-app-2026.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:1234567890:android:b2a9e34c9f187a02c3d4e5","android_client_info":{"package_name":"com.prachurjo.savetrick.app"}},"api_key":[{"current_key":"dummy_key"}]}],"configuration_version":"1"}' > app/google-services.json
           fi
 
-      - name: 7. Make gradlew executable
+      - name: 7. Prepare Gradle Wrapper
         run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-          else
-            gradle wrapper --gradle-version 9.3.1
-            chmod +x ./gradlew
+          if [ ! -f "./gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "Generating Gradle 9.3.1 wrapper..."
+            gradle wrapper --gradle-version 9.3.1 --distribution-type bin
           fi
+          chmod +x ./gradlew
 
       - name: 8. Build Debug APK
         run: |
+          echo "Starting APK Build..."
+          # Select gradlew if wrapper jar is present, otherwise fallback to system gradle
           if [ -f "./gradlew" ] && [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-            ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
+            BUILD_RUNNER="./gradlew"
           else
-            gradle assembleDebug --no-daemon --no-configuration-cache --stacktrace
+            BUILD_RUNNER="gradle"
           fi
+
+          echo "Using runner: $BUILD_RUNNER"
+          $BUILD_RUNNER :app:assembleDebug \
+            --no-daemon \
+            --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8" \
+            -Dorg.gradle.workers.max=2 \
+            -x test \
+            -x lint \
+            -x lintVitalRelease \
+            -x verifyRoborazziDebug
 
       - name: 9. Verify and Copy APK
         run: |
           mkdir -p build-output
           APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" -type f | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            APK_PATH=$(find . -name "*.apk" -type f | grep -v "build-output" | head -n 1)
+          fi
+
           if [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
             cp "$APK_PATH" build-output/SaveTrick-debug.apk
-            echo "✅ Successfully generated SaveTrick-debug.apk"
+            echo "✅ Successfully located APK at $APK_PATH and saved to build-output/SaveTrick-debug.apk"
           else
-            echo "❌ Failed to locate generated APK in app/build/outputs/apk/debug"
+            echo "❌ Failed to locate generated APK"
+            find . -name "*.apk" || true
             exit 1
           fi
           ls -lh build-output/
