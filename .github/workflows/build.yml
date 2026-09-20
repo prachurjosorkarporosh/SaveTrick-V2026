@@ -1,85 +1,55 @@
-name: Build SaveTrick APK
+name: Build workflow
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "master"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "master"]
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build:
+    name: Build Debug APK
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 21
+      - name: 2. Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Gradle
+      - name: 3. Setup Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.3.1"
 
-      - name: Ensure gradlew is executable
+      - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Restore debug.keystore and environment
+      - name: 4. Create debug keystore and environment
         run: |
           if [ -f "debug.keystore.base64" ]; then
             base64 -d debug.keystore.base64 > debug.keystore
+          elif [ ! -f "debug.keystore" ]; then
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
           touch .env
-          if [ ! -f "google-services.json" ]; then
+          if [ ! -f "app/google-services.json" ]; then
             echo '{"project_info":{"project_number":"0","project_id":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0"},"api_key":[{}]}]}' > app/google-services.json || true
           fi
 
-      - name: Accept Android Licenses
+      - name: Accept Android SDK Licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: Build Debug and Release APK
-        run: ./gradlew assembleDebug assembleRelease --no-daemon --no-configuration-cache --stacktrace
+      - name: 5 & 6. Assemble Debug APK
+        run: ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
-      - name: Prepare APKs with version name
-        run: |
-          mkdir -p release-apks
-          cp app/build/outputs/apk/release/app-release.apk release-apks/SaveTrick-v2.5.7-release.apk || cp app/build/outputs/apk/release/*.apk release-apks/ || true
-          cp app/build/outputs/apk/debug/app-debug.apk release-apks/SaveTrick-v2.5.7-debug.apk || cp app/build/outputs/apk/debug/*.apk release-apks/ || true
-
-      - name: Upload Debug APK
+      - name: 7 & 8. Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SaveTrick-Debug-APK
-          path: release-apks/*debug.apk
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SaveTrick-Release-APK
-          path: release-apks/*release.apk
-
-      - name: Create GitHub Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v2.5.7-${{ github.run_number }}
-          name: SaveTrick v2.5.7 (Build ${{ github.run_number }})
-          body: |
-            ## SaveTrick APK Download
-            - **Release APK**: Production-ready APK
-            - **Debug APK**: Debug testing APK
-            Built automatically with GitHub Actions.
-          files: release-apks/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          name: SaveTrick-APK
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
