@@ -88,6 +88,7 @@ import com.example.data.model.MediaType
 import com.example.data.repository.SaveTrickRepository
 import com.example.service.FloatingDownloaderService
 import com.example.ui.components.BrandHeader
+import com.example.ui.components.MediaThumbnailPreviewCard
 import com.example.ui.components.ModernAudioPlayerSheet
 import com.example.ui.components.ModernPhotoViewerDialog
 import com.example.ui.components.ModernVideoPlayerDialog
@@ -634,238 +635,125 @@ fun DownloaderScreen(
             }
         }
 
-        // 5. Resolved Media Result
+        // 5. Resolved Media Result with Thumbnail Preview Card
         AnimatedVisibility(
             visible = mediaResult != null,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 mediaResult?.let { result ->
-                    when (result.type) {
-                        MediaType.VIDEO -> {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("video_result_card"),
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
-                                shadowElevation = 2.dp
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                                ) {
-                                    Text(
-                                        text = result.title,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        maxLines = 2
-                                    )
-
-                                    result.author?.let { author ->
-                                        Text(
-                                            text = "@$author",
-                                            style = MaterialTheme.typography.bodySmall.copy(color = accentColor)
-                                        )
-                                    }
-
-                                    // Video Player Preview Box with Fullscreen trigger
-                                    Box(modifier = Modifier.fillMaxWidth()) {
-                                        if (!result.videoUrl.isNullOrBlank()) {
-                                            VideoPlayerView(
-                                                videoUrl = result.videoUrl,
-                                                modifier = Modifier.fillMaxWidth()
-                                            )
-                                            IconButton(
-                                                onClick = {
-                                                    activeVideoPlayer = Pair(result.videoUrl, result.title)
-                                                },
-                                                modifier = Modifier
-                                                    .align(Alignment.TopEnd)
-                                                    .padding(8.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color.Black.copy(alpha = 0.6f))
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Fullscreen,
-                                                    contentDescription = "Fullscreen",
-                                                    tint = Color.White
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    // Download Video Button
-                                    Button(
-                                        onClick = {
-                                            result.videoUrl?.let { vUrl ->
-                                                repository.startDownload(
-                                                    sourceUrl = result.sourceUrl,
-                                                    mediaUrl = vUrl,
-                                                    title = result.title,
-                                                    thumbnail = result.coverUrl.orEmpty(),
-                                                    mediaType = MediaType.VIDEO
-                                                )
-                                                Toast.makeText(context, context.getString(R.string.download_started), Toast.LENGTH_SHORT).show()
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .testTag("download_video_button")
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Download,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = stringResource(R.string.download_video),
-                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                                        )
-                                    }
-
-                                    // Download Audio Button & In-App MP3 Player trigger
-                                    if (!result.audioUrl.isNullOrBlank()) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            OutlinedButton(
-                                                onClick = {
-                                                    activeAudioPlayer = Triple(result.audioUrl, result.title, result.coverUrl)
-                                                },
-                                                shape = RoundedCornerShape(10.dp),
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.PlayArrow,
-                                                    contentDescription = "Play Audio",
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text("Play MP3")
-                                            }
-
-                                            Button(
-                                                onClick = {
-                                                    repository.startDownload(
-                                                        sourceUrl = result.sourceUrl,
-                                                        mediaUrl = result.audioUrl,
-                                                        title = "${result.title} (Audio)",
-                                                        thumbnail = result.coverUrl.orEmpty(),
-                                                        mediaType = MediaType.AUDIO
-                                                    )
-                                                    Toast.makeText(context, context.getString(R.string.audio_download_started), Toast.LENGTH_SHORT).show()
-                                                },
-                                                shape = RoundedCornerShape(10.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Audiotrack,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(text = stringResource(R.string.download_audio))
-                                            }
-                                        }
-                                    }
-                                }
+                    // High-quality Thumbnail Preview Card before initiating final save action
+                    MediaThumbnailPreviewCard(
+                        media = result,
+                        accentColor = accentColor,
+                        onPlayPreview = {
+                            if (!result.videoUrl.isNullOrBlank()) {
+                                activeVideoPlayer = Pair(result.videoUrl, result.title)
                             }
-                        }
-
-                        MediaType.PHOTO_SLIDESHOW, MediaType.IMAGE -> {
-                            SlideshowView(
-                                images = result.images,
-                                audioUrl = result.audioUrl,
-                                onImageClick = { idx ->
-                                    activePhotoViewer = Pair(result.images, idx)
-                                },
-                                onDownloadAudio = if (!result.audioUrl.isNullOrBlank()) {
-                                    {
-                                        repository.startDownload(
-                                            sourceUrl = result.sourceUrl,
-                                            mediaUrl = result.audioUrl,
-                                            title = "${result.title} (Audio)",
-                                            thumbnail = result.coverUrl.orEmpty(),
-                                            mediaType = MediaType.AUDIO
-                                        )
-                                        Toast.makeText(context, context.getString(R.string.audio_download_started), Toast.LENGTH_SHORT).show()
-                                    }
-                                } else null,
-                                onDownloadSingleImage = { imgUrl, idx ->
+                        },
+                        onPhotoClick = { idx ->
+                            activePhotoViewer = Pair(result.images, idx)
+                        },
+                        onDownloadVideo = {
+                            result.videoUrl?.let { vUrl ->
+                                repository.startDownload(
+                                    sourceUrl = result.sourceUrl,
+                                    mediaUrl = vUrl,
+                                    title = result.title,
+                                    thumbnail = result.coverUrl.orEmpty(),
+                                    mediaType = MediaType.VIDEO
+                                )
+                                Toast.makeText(context, context.getString(R.string.download_started), Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onDownloadAudio = if (!result.audioUrl.isNullOrBlank()) {
+                            {
+                                repository.startDownload(
+                                    sourceUrl = result.sourceUrl,
+                                    mediaUrl = result.audioUrl,
+                                    title = "${result.title} (Audio)",
+                                    thumbnail = result.coverUrl.orEmpty(),
+                                    mediaType = MediaType.AUDIO
+                                )
+                                Toast.makeText(context, context.getString(R.string.audio_download_started), Toast.LENGTH_SHORT).show()
+                            }
+                        } else null,
+                        onPlayAudioPreview = if (!result.audioUrl.isNullOrBlank()) {
+                            {
+                                activeAudioPlayer = Triple(result.audioUrl, result.title, result.coverUrl)
+                            }
+                        } else null,
+                        onDownloadAllPhotos = if (result.images.isNotEmpty()) {
+                            {
+                                result.images.forEachIndexed { index, imgUrl ->
                                     repository.startDownload(
-                                        sourceUrl = "${result.sourceUrl}#img_$idx",
+                                        sourceUrl = "${result.sourceUrl}#img_${index + 1}",
                                         mediaUrl = imgUrl,
-                                        title = "${result.title}_Image_$idx",
+                                        title = "${result.title}_Image_${index + 1}",
                                         thumbnail = imgUrl,
                                         mediaType = MediaType.IMAGE
                                     )
-                                    Toast.makeText(context, context.getString(R.string.image_downloading, idx), Toast.LENGTH_SHORT).show()
-                                },
-                                onDownloadAllImages = {
-                                    result.images.forEachIndexed { index, imgUrl ->
-                                        repository.startDownload(
-                                            sourceUrl = "${result.sourceUrl}#img_${index + 1}",
-                                            mediaUrl = imgUrl,
-                                            title = "${result.title}_Image_${index + 1}",
-                                            thumbnail = imgUrl,
-                                            mediaType = MediaType.IMAGE
-                                        )
-                                    }
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.queued_images_download, result.images.size),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
                                 }
-                            )
-                        }
-
-                        MediaType.AUDIO -> {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Text(
-                                        text = result.title,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                                    )
-                                    Button(
-                                        onClick = {
-                                            result.audioUrl?.let { aUrl ->
-                                                repository.startDownload(
-                                                    sourceUrl = result.sourceUrl,
-                                                    mediaUrl = aUrl,
-                                                    title = result.title,
-                                                    thumbnail = result.coverUrl.orEmpty(),
-                                                    mediaType = MediaType.AUDIO
-                                                )
-                                                Toast.makeText(context, context.getString(R.string.audio_download_started), Toast.LENGTH_SHORT).show()
-                                            }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(stringResource(R.string.download_audio))
-                                    }
-                                }
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.queued_images_download, result.images.size),
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
-                        }
+                        } else null
+                    )
+
+                    // If it's a slideshow, also show individual photo cards below
+                    if (result.type == MediaType.PHOTO_SLIDESHOW || result.type == MediaType.IMAGE) {
+                        SlideshowView(
+                            images = result.images,
+                            audioUrl = result.audioUrl,
+                            onImageClick = { idx ->
+                                activePhotoViewer = Pair(result.images, idx)
+                            },
+                            onDownloadAudio = if (!result.audioUrl.isNullOrBlank()) {
+                                {
+                                    repository.startDownload(
+                                        sourceUrl = result.sourceUrl,
+                                        mediaUrl = result.audioUrl,
+                                        title = "${result.title} (Audio)",
+                                        thumbnail = result.coverUrl.orEmpty(),
+                                        mediaType = MediaType.AUDIO
+                                    )
+                                    Toast.makeText(context, context.getString(R.string.audio_download_started), Toast.LENGTH_SHORT).show()
+                                }
+                            } else null,
+                            onDownloadSingleImage = { imgUrl, idx ->
+                                repository.startDownload(
+                                    sourceUrl = "${result.sourceUrl}#img_$idx",
+                                    mediaUrl = imgUrl,
+                                    title = "${result.title}_Image_$idx",
+                                    thumbnail = imgUrl,
+                                    mediaType = MediaType.IMAGE
+                                )
+                                Toast.makeText(context, context.getString(R.string.image_downloading, idx), Toast.LENGTH_SHORT).show()
+                            },
+                            onDownloadAllImages = {
+                                result.images.forEachIndexed { index, imgUrl ->
+                                    repository.startDownload(
+                                        sourceUrl = "${result.sourceUrl}#img_${index + 1}",
+                                        mediaUrl = imgUrl,
+                                        title = "${result.title}_Image_${index + 1}",
+                                        thumbnail = imgUrl,
+                                        mediaType = MediaType.IMAGE
+                                    )
+                                }
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.queued_images_download, result.images.size),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
                     }
                 }
             }
