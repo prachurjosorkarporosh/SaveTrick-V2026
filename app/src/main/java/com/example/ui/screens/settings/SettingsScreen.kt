@@ -9,7 +9,6 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Animation
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteSweep
@@ -35,19 +34,18 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -56,7 +54,6 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -77,12 +74,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.model.PaymentSettings
 import com.example.data.repository.SaveTrickRepository
 import com.example.ui.components.BrandHeader
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.ElectricCyan
-import com.example.ui.theme.ErrorRed
 import com.example.ui.theme.SuccessGreen
 import kotlinx.coroutines.launch
 
@@ -99,7 +94,6 @@ fun SettingsScreen(
 
     val currentTheme by repository.themeMode.collectAsState()
     val currentLang by repository.language.collectAsState()
-    val isPro by repository.isPro.collectAsState()
     val userName by repository.userName.collectAsState()
 
     var showEditNameDialog by remember { mutableStateOf(false) }
@@ -107,7 +101,6 @@ fun SettingsScreen(
     var showResolutionDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
-    var showPaymentDialog by remember { mutableStateOf(false) }
 
     var startupAnimEnabled by remember { mutableStateOf(repository.preferences.isStartupAnimationEnabled()) }
     var notificationsEnabled by remember { mutableStateOf(repository.preferences.isNotificationsEnabled()) }
@@ -120,7 +113,6 @@ fun SettingsScreen(
     fun handleAdminSecretTap() {
         val now = System.currentTimeMillis()
         if (now - lastTapTime > 2000L) {
-            // Window expired, reset to 1
             tapCount = 1
         } else {
             tapCount++
@@ -145,9 +137,9 @@ fun SettingsScreen(
         SectionHeader(title = stringResource(R.string.profile_header))
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
             shadowElevation = 1.dp
         ) {
             Column(
@@ -162,8 +154,8 @@ fun SettingsScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
                             .background(ElectricBlue.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -171,7 +163,7 @@ fun SettingsScreen(
                             imageVector = Icons.Default.Person,
                             contentDescription = null,
                             tint = ElectricBlue,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(26.dp)
                         )
                     }
 
@@ -219,51 +211,131 @@ fun SettingsScreen(
                         )
                     }
                 }
+            }
+        }
 
-                // Pro Status Badge / Upgrade Callout
-                Surface(
+        // 2. Preferences & Download Settings
+        SectionHeader(title = stringResource(R.string.preferences_header))
+
+        // Direct Material3 Theme Switcher Card (Light / System / Dark)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+            shadowElevation = 1.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (isPro) SuccessGreen.copy(alpha = 0.12f) else ElectricCyan.copy(alpha = 0.1f),
-                    border = BorderStroke(
-                        1.dp,
-                        if (isPro) SuccessGreen.copy(alpha = 0.3f) else ElectricCyan.copy(alpha = 0.3f)
-                    )
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.WorkspacePremium,
+                                imageVector = if (currentTheme.equals("dark", ignoreCase = true)) Icons.Default.DarkMode else Icons.Default.LightMode,
                                 contentDescription = null,
-                                tint = if (isPro) SuccessGreen else ElectricBlue,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isPro) stringResource(R.string.pro_status_badge) else stringResource(R.string.free_status_badge),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isPro) SuccessGreen else MaterialTheme.colorScheme.onBackground
-                                )
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
+                        Column {
+                            Text(
+                                text = stringResource(R.string.theme_mode),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = when (currentTheme.lowercase()) {
+                                    "dark" -> stringResource(R.string.theme_dark)
+                                    "light" -> stringResource(R.string.theme_light)
+                                    else -> stringResource(R.string.theme_system)
+                                },
+                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            )
+                        }
+                    }
 
-                        if (!isPro) {
-                            Button(
-                                onClick = { showPaymentDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.testTag("btn_upgrade_pro")
+                    // Direct Quick Toggle (Switches between light and dark)
+                    Switch(
+                        checked = currentTheme.equals("dark", ignoreCase = true),
+                        onCheckedChange = { isDark ->
+                            val newMode = if (isDark) "dark" else "light"
+                            repository.preferences.setThemeMode(newMode)
+                            onThemeChanged(newMode)
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = ElectricBlue
+                        ),
+                        modifier = Modifier.testTag("theme_quick_switch")
+                    )
+                }
+
+                // 3-Option Segmented Selector: Light | System | Dark
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val themeOptions = listOf(
+                        Triple("light", stringResource(R.string.theme_light), Icons.Default.LightMode),
+                        Triple("system", stringResource(R.string.theme_system), Icons.Default.BrightnessAuto),
+                        Triple("dark", stringResource(R.string.theme_dark), Icons.Default.DarkMode)
+                    )
+
+                    themeOptions.forEach { (mode, label, icon) ->
+                        val isSelected = currentTheme.equals(mode, ignoreCase = true)
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    repository.preferences.setThemeMode(mode)
+                                    onThemeChanged(mode)
+                                }
+                                .padding(vertical = 6.dp),
+                            shadowElevation = if (isSelected) 2.dp else 0.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = stringResource(R.string.upgrade_pro),
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                                    text = label,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 12.sp
+                                    )
                                 )
                             }
                         }
@@ -272,21 +344,13 @@ fun SettingsScreen(
             }
         }
 
-        // 2. Preferences Section
-        SectionHeader(title = stringResource(R.string.preferences_header))
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                SettingsItem(
-                    icon = Icons.Default.DarkMode,
-                    title = stringResource(R.string.theme_mode),
-                    subtitle = currentTheme.replaceFirstChar { it.uppercase() },
-                    onClick = { showThemeDialog = true }
-                )
                 SettingsItem(
                     icon = Icons.Default.HighQuality,
                     title = stringResource(R.string.default_resolution),
@@ -302,7 +366,7 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Default.Folder,
                     title = stringResource(R.string.storage_destination),
-                    subtitle = if (repository.preferences.getStorageDestination() == "downloads_public") "Downloads Folder" else "App Storage",
+                    subtitle = if (repository.preferences.getStorageDestination() == "downloads_public") "Downloads/SaveTrick" else "App Storage",
                     onClick = { showStorageDialog = true }
                 )
                 SettingsToggleItem(
@@ -335,19 +399,19 @@ fun SettingsScreen(
             }
         }
 
-        // 3. Data Management Section
+        // 3. Data & Storage Management
         SectionHeader(title = stringResource(R.string.data_header))
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SettingsItem(
                     icon = Icons.Default.DeleteSweep,
                     title = stringResource(R.string.clear_cache),
-                    subtitle = "Free up temporary storage",
+                    subtitle = "Clear temporary files & thumbnail cache",
                     onClick = {
                         try {
                             context.cacheDir.deleteRecursively()
@@ -358,9 +422,9 @@ fun SettingsScreen(
                     }
                 )
                 SettingsItem(
-                    icon = Icons.Default.DeleteSweep,
+                    icon = Icons.Default.Storage,
                     title = stringResource(R.string.clear_history),
-                    subtitle = "Remove completed/failed records",
+                    subtitle = "Remove download logs & history",
                     onClick = {
                         scope.launch {
                             repository.clearHistory()
@@ -371,22 +435,21 @@ fun SettingsScreen(
             }
         }
 
-        // 4. About SaveTrick Section
-        // Hidden Admin 4-tap trigger is on the Brand/App name in this section!
+        // 4. About SaveTrick
         SectionHeader(title = stringResource(R.string.about_header))
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // SaveTrick brand title with 4-tap detector
+                // SaveTrick brand title with 4-tap detector for Admin Portal
                 BrandHeader(
                     showVersion = true,
                     onBrandClick = { handleAdminSecretTap() },
@@ -398,13 +461,14 @@ fun SettingsScreen(
                 Text(
                     text = stringResource(R.string.app_description),
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp
                     )
                 )
 
-                // Developer & Website info (Section 4 specifies Developer info belongs in About)
+                // Developer & Website info
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -478,7 +542,8 @@ fun SettingsScreen(
                             repository.preferences.setUserName(newNameInput.trim())
                         }
                         showEditNameDialog = false
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
                 ) {
                     Text(text = stringResource(R.string.save_name))
                 }
@@ -493,7 +558,11 @@ fun SettingsScreen(
 
     // Theme Selection Dialog
     if (showThemeDialog) {
-        val themes = listOf("light" to stringResource(R.string.theme_light), "dark" to stringResource(R.string.theme_dark), "system" to stringResource(R.string.theme_system))
+        val themes = listOf(
+            "light" to stringResource(R.string.theme_light),
+            "dark" to stringResource(R.string.theme_dark),
+            "system" to stringResource(R.string.theme_system)
+        )
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
             title = { Text(text = stringResource(R.string.theme_mode)) },
@@ -531,7 +600,10 @@ fun SettingsScreen(
 
     // Language Selection Dialog
     if (showLanguageDialog) {
-        val langs = listOf("en" to stringResource(R.string.lang_english), "bn" to stringResource(R.string.lang_bengali))
+        val langs = listOf(
+            "en" to stringResource(R.string.lang_english),
+            "bn" to stringResource(R.string.lang_bengali)
+        )
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
             title = { Text(text = stringResource(R.string.app_language)) },
@@ -643,14 +715,6 @@ fun SettingsScreen(
             confirmButton = {}
         )
     }
-
-    // Payment / Upgrade Dialog (bKash & Nagad)
-    if (showPaymentDialog) {
-        PaymentDialog(
-            repository = repository,
-            onDismiss = { showPaymentDialog = false }
-        )
-    }
 }
 
 @Composable
@@ -740,150 +804,4 @@ private fun SettingsToggleItem(
             )
         )
     }
-}
-
-@Composable
-private fun PaymentDialog(
-    repository: SaveTrickRepository,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    var paymentSettings by remember { mutableStateOf(PaymentSettings()) }
-    var selectedProvider by remember { mutableStateOf("bKash") } // "bKash" or "Nagad"
-    var trxIdInput by remember { mutableStateOf("") }
-    var isSubmitting by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        paymentSettings = repository.getPaymentSettings()
-    }
-
-    val activeNumber = if (selectedProvider == "bKash") paymentSettings.bkashNumber else paymentSettings.nagadNumber
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.payment_title),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.payment_desc),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                // Select Provider
-                Text(
-                    text = stringResource(R.string.select_provider),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { selectedProvider = "bKash" },
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(
-                            2.dp,
-                            if (selectedProvider == "bKash") ElectricBlue else MaterialTheme.colorScheme.outline
-                        ),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.provider_bkash),
-                            fontWeight = if (selectedProvider == "bKash") FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = { selectedProvider = "Nagad" },
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(
-                            2.dp,
-                            if (selectedProvider == "Nagad") ElectricBlue else MaterialTheme.colorScheme.outline
-                        ),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.provider_nagad),
-                            fontWeight = if (selectedProvider == "Nagad") FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-
-                // Send Money Instructions
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text(
-                            text = stringResource(
-                                R.string.send_money_instructions,
-                                paymentSettings.monthlyPriceBdt.toString(),
-                                selectedProvider,
-                                activeNumber
-                            ),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
-                        )
-                    }
-                }
-
-                // TrxID input
-                OutlinedTextField(
-                    value = trxIdInput,
-                    onValueChange = { trxIdInput = it },
-                    placeholder = { Text(stringResource(R.string.trx_id_hint)) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("input_trx_id")
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (trxIdInput.isBlank()) {
-                        Toast.makeText(context, "Please enter your Transaction ID", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    isSubmitting = true
-                    scope.launch {
-                        val res = repository.submitPayment(
-                            provider = selectedProvider,
-                            trxId = trxIdInput.trim(),
-                            amount = paymentSettings.monthlyPriceBdt.toDouble()
-                        )
-                        isSubmitting = false
-                        res.onSuccess {
-                            Toast.makeText(context, context.getString(R.string.payment_submitted), Toast.LENGTH_LONG).show()
-                            onDismiss()
-                        }.onFailure {
-                            Toast.makeText(context, "Error submitting payment: ${it.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
-                enabled = !isSubmitting,
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
-                modifier = Modifier.testTag("btn_submit_payment")
-            ) {
-                Text(text = stringResource(R.string.btn_submit_payment))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.btn_dismiss))
-            }
-        }
-    )
 }

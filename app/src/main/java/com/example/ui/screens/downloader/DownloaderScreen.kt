@@ -368,14 +368,7 @@ fun DownloaderScreen(
             }
         }
 
-        // 5. Non-intrusive Ad Banner (Visible for FREE, hidden for PRO)
-        AdBanner(
-            isPro = isPro,
-            onUpgradeClick = onNavigateToSettings,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        // 6. Resolved Media Result
+        // 5. Resolved Media Result
         mediaResult?.let { result ->
             when (result.type) {
                 MediaType.VIDEO -> {
