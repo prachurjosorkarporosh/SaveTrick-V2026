@@ -39,24 +39,32 @@ class MainActivity : ComponentActivity() {
     private lateinit var repository: SaveTrickRepository
 
     override fun attachBaseContext(newBase: Context) {
-        val prefs = newBase.getSharedPreferences("savetrick_preferences", Context.MODE_PRIVATE)
-        val saved = prefs.getString("key_lang", null)
-        val lang = if (!saved.isNullOrBlank()) {
-            saved
-        } else {
-            val sysLang = java.util.Locale.getDefault().language
-            if (sysLang.startsWith("bn")) "bn" else "en"
+        try {
+            val prefs = newBase.getSharedPreferences("savetrick_preferences", Context.MODE_PRIVATE)
+            val saved = prefs.getString("key_lang", null)
+            val lang = if (!saved.isNullOrBlank()) {
+                saved
+            } else {
+                val sysLang = java.util.Locale.getDefault().language
+                if (sysLang.startsWith("bn")) "bn" else "en"
+            }
+            val localizedContext = LocaleHelper.applyLocale(newBase, lang)
+            super.attachBaseContext(localizedContext)
+        } catch (_: Throwable) {
+            super.attachBaseContext(newBase)
         }
-        val localizedContext = LocaleHelper.applyLocale(newBase, lang)
-        super.attachBaseContext(localizedContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        repository = SaveTrickRepository(this)
-        LocaleHelper.applyLocale(this, repository.preferences.getLanguage())
+        try {
+            repository = SaveTrickRepository(this)
+            LocaleHelper.applyLocale(this, repository.preferences.getLanguage())
+        } catch (t: Throwable) {
+            repository = SaveTrickRepository(applicationContext)
+        }
 
         // Handle shared TikTok links from Intent (e.g. Share via SaveTrick)
         handleIncomingIntent(intent)
@@ -68,18 +76,15 @@ class MainActivity : ComponentActivity() {
             val currentLanguage by repository.language.collectAsState()
 
             val systemConfiguration = LocalConfiguration.current
-            val baseContext = LocalContext.current
 
             val localizedConfiguration = remember(systemConfiguration, currentLanguage) {
                 LocaleHelper.getLocalizedConfiguration(systemConfiguration, currentLanguage)
             }
 
-            val localizedContext = remember(baseContext, currentLanguage) {
-                baseContext.createConfigurationContext(localizedConfiguration)
-            }
-
             LaunchedEffect(currentLanguage) {
-                LocaleHelper.applyLocale(this@MainActivity, currentLanguage)
+                try {
+                    LocaleHelper.applyLocale(this@MainActivity, currentLanguage)
+                } catch (_: Throwable) {}
             }
 
             // Permission launcher for Storage & Android 13+ Notifications
@@ -117,8 +122,7 @@ class MainActivity : ComponentActivity() {
 
             key(currentLanguage) {
                 CompositionLocalProvider(
-                    LocalConfiguration provides localizedConfiguration,
-                    LocalContext provides localizedContext
+                    LocalConfiguration provides localizedConfiguration
                 ) {
                     SaveTrickTheme(
                         themeMode = currentTheme,

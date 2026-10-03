@@ -35,11 +35,6 @@
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.MyApplication">
 
-        <!-- Google Mobile Ads (AdMob) SDK -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
-
         <!-- Main Launcher Activity (Instant startup, no blank screen) -->
         <activity
             android:name=".MainActivity"
