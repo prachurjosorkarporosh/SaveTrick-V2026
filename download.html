@@ -304,7 +304,9 @@
       justify-content: center;
       gap: 14px;
       width: 100%;
-      background: linear-gradient(135deg, var(--tiktok-red) 0%, var(--tiktok-coral) 50%, var(--tiktok-cyan) 100%);
+      background: linear-gradient(135deg, var(--tiktok-red) 0%, var(--tiktok-coral) 45%, var(--tiktok-cyan) 100%);
+      background-size: 200% 200%;
+      background-position: 0% 50%;
       color: #FFFFFF;
       font-family: var(--font-display);
       font-size: 20px;
@@ -313,22 +315,185 @@
       padding: 20px 32px;
       border-radius: 18px;
       text-decoration: none;
-      box-shadow: 0 12px 35px rgba(254, 44, 85, 0.5);
-      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      border: none;
+      /* Initial warm TikTok red/coral glow */
+      box-shadow: 
+        0 12px 30px rgba(254, 44, 85, 0.45),
+        0 0 15px rgba(254, 44, 85, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: 
+        transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+        background-position 0.5s ease,
+        border-color 0.45s ease;
     }
 
+    /* Ambient animated glow halo shifting behind the button on hover */
+    .cta-main-btn::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 20px;
+      background: linear-gradient(90deg, #FE2C55, #7928CA, #25F4EE, #FE2C55);
+      background-size: 300% 300%;
+      z-index: -1;
+      opacity: 0;
+      filter: blur(14px);
+      transition: opacity 0.45s ease;
+    }
+
+    /* Subtle hover animation effect that shifts glow color to electric cyan & neon purple */
     .cta-main-btn:hover {
-      transform: translateY(-3px) scale(1.01);
-      box-shadow: 0 20px 45px rgba(37, 244, 238, 0.55);
-      filter: brightness(1.08);
+      transform: translateY(-4px) scale(1.015);
+      background-position: 100% 50%;
+      border-color: rgba(37, 244, 238, 0.7);
+      /* Color-shifting glow: switches smoothly from red/coral to electric cyan & violet */
+      box-shadow: 
+        0 18px 45px rgba(37, 244, 238, 0.5),
+        0 0 35px rgba(121, 40, 202, 0.55),
+        0 0 16px rgba(37, 244, 238, 0.8);
+    }
+
+    .cta-main-btn:hover::after {
+      opacity: 0.85;
+      animation: rotateGlow 3.5s linear infinite;
+    }
+
+    @keyframes rotateGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
     .cta-main-btn svg {
       width: 26px;
       height: 26px;
       fill: currentColor;
+    }
+
+    /* Advertisement Container Styles */
+    .ad-placement-box {
+      margin: 40px auto;
+      max-width: 820px;
+      background: rgba(14, 18, 27, 0.65);
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      padding: 16px 20px;
+      text-align: center;
+      position: relative;
+      transition: border-color 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .ad-placement-box:hover {
+      border-color: rgba(37, 244, 238, 0.4);
+    }
+
+    .ad-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .ad-creative-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: linear-gradient(135deg, rgba(25, 32, 48, 0.7) 0%, rgba(15, 20, 30, 0.9) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 14px 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.25s ease;
+    }
+
+    .ad-creative-card:hover {
+      border-color: rgba(254, 44, 85, 0.4);
+      background: linear-gradient(135deg, rgba(32, 42, 64, 0.8) 0%, rgba(18, 24, 38, 0.95) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .ad-creative-content {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-align: left;
+    }
+
+    .ad-icon-gem {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #FF0050, #25F4EE);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .ad-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 2px;
+    }
+
+    .ad-subtitle {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    .ad-cta-btn {
+      font-family: var(--font-display);
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 10px;
+      background: rgba(37, 244, 238, 0.15);
+      border: 1px solid var(--tiktok-cyan);
+      color: var(--tiktok-cyan);
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .ad-creative-card:hover .ad-cta-btn {
+      background: var(--tiktok-cyan);
+      color: #07090E;
+      box-shadow: 0 0 15px rgba(37, 244, 238, 0.6);
+    }
+
+    @media (max-width: 600px) {
+      .ad-creative-card {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+      }
+      .ad-creative-content {
+        flex-direction: column;
+        text-align: center;
+      }
+      .ad-cta-btn {
+        text-align: center;
+      }
     }
 
     /* Small indeterminate progress bar below download button */
@@ -1046,12 +1211,27 @@
         </div>
         <div class="trust-item">
           <svg class="trust-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-          No Ads & No Login Required
+          100% Free & No Login Required
         </div>
         <div class="trust-item">
           <svg class="trust-icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
           Automatic Gallery Sync
         </div>
+      </div>
+
+      <!-- ADVERTISEMENT SLOT 1 (Top Responsive Showcase) -->
+      <div class="ad-placement-box" id="adSlotTop">
+        <span class="ad-badge">Sponsored Advertisement</span>
+        <a href="#primaryDownloadBtn" class="ad-creative-card">
+          <div class="ad-creative-content">
+            <div class="ad-icon-gem">⚡</div>
+            <div>
+              <div class="ad-title">Next-Gen Android Cloud Acceleration</div>
+              <div class="ad-subtitle">Boost your download speeds up to 10x with zero data throttling & privacy protection.</div>
+            </div>
+          </div>
+          <span class="ad-cta-btn">Install Free ↗</span>
+        </a>
       </div>
     </section>
 
@@ -1098,6 +1278,21 @@
         </div>
       </div>
     </section>
+
+    <!-- ADVERTISEMENT SLOT 2 (Mid-Content Native Banner) -->
+    <div class="ad-placement-box" id="adSlotMid">
+      <span class="ad-badge">Advertisement</span>
+      <a href="#primaryDownloadBtn" class="ad-creative-card">
+        <div class="ad-creative-content">
+          <div class="ad-icon-gem" style="background: linear-gradient(135deg, #7928CA, #25F4EE);">🛡️</div>
+          <div>
+            <div class="ad-title">AdGuard & Clean Web Experience for Android</div>
+            <div class="ad-subtitle">Block unwanted popups, trackers, and malware with one tap. 100% lightweight.</div>
+          </div>
+        </div>
+        <span class="ad-cta-btn">Get Started ↗</span>
+      </a>
+    </div>
 
     <!-- Core Features Grid -->
     <section class="features-section">
@@ -1182,6 +1377,21 @@
         </div>
       </div>
     </section>
+
+    <!-- ADVERTISEMENT SLOT 3 (Bottom Leaderboard) -->
+    <div class="ad-placement-box" id="adSlotBottom">
+      <span class="ad-badge">Sponsored Advertisement</span>
+      <a href="#primaryDownloadBtn" class="ad-creative-card">
+        <div class="ad-creative-content">
+          <div class="ad-icon-gem" style="background: linear-gradient(135deg, #00E676, #25F4EE);">💎</div>
+          <div>
+            <div class="ad-title">HD Video Editor & Sound Enhancer for Mobile</div>
+            <div class="ad-subtitle">Trim, edit, and remix your downloaded watermark-free videos with pro effects.</div>
+          </div>
+        </div>
+        <span class="ad-cta-btn">Try Now ↗</span>
+      </a>
+    </div>
 
     <!-- FAQ -->
     <section class="faq-section">
