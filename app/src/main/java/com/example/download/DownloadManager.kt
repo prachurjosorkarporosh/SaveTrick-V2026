@@ -151,10 +151,11 @@ class DownloadManager private constructor(private val context: Context) {
                 val totalBytes = body.contentLength()
                 val isIndeterminate = totalBytes <= 0
 
-                inputStream = body.byteStream()
-                outputStream = FileOutputStream(partFile)
+                inputStream = java.io.BufferedInputStream(body.byteStream(), 64 * 1024)
+                outputStream = java.io.FileOutputStream(partFile)
+                val bufferedOutput = java.io.BufferedOutputStream(outputStream, 64 * 1024)
 
-                val buffer = ByteArray(8 * 1024)
+                val buffer = ByteArray(64 * 1024)
                 var bytesRead: Int
                 var downloadedBytes = 0L
 
@@ -164,7 +165,7 @@ class DownloadManager private constructor(private val context: Context) {
                 var lastUiUpdateTime = 0L
 
                 while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                    outputStream.write(buffer, 0, bytesRead)
+                    bufferedOutput.write(buffer, 0, bytesRead)
                     downloadedBytes += bytesRead
                     bytesSinceLastCalc += bytesRead
 
@@ -209,7 +210,8 @@ class DownloadManager private constructor(private val context: Context) {
                     }
                 }
 
-                outputStream.flush()
+                bufferedOutput.flush()
+                bufferedOutput.close()
                 outputStream.close()
                 outputStream = null
                 inputStream.close()

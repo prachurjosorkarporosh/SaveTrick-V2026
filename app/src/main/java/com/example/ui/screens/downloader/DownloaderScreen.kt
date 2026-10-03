@@ -3,6 +3,11 @@ package com.example.ui.screens.downloader
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +47,8 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +87,8 @@ fun DownloaderScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    val incomingSharedUrl by repository.sharedIncomingUrl.collectAsState()
 
     var urlInput by remember { mutableStateOf("") }
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Single Link, 1: Batch
@@ -122,6 +131,18 @@ fun DownloaderScreen(
                 }
                 mediaResult = null
             }
+        }
+    }
+
+    // Auto-detect and resolve TikTok link received via Android Share Sheet
+    LaunchedEffect(incomingSharedUrl) {
+        val shared = incomingSharedUrl
+        if (!shared.isNullOrBlank()) {
+            val clean = UrlValidator.sanitizeUrl(shared)
+            urlInput = clean
+            selectedTab = 0
+            repository.clearIncomingSharedUrl()
+            handleResolve(clean)
         }
     }
 
@@ -416,8 +437,12 @@ fun DownloaderScreen(
             }
         }
 
-        // 4. Error Message Banner (if unsupported link or failed resolution)
-        if (errorMessage != null) {
+        // 4. Error Message Banner (with smooth animation)
+        AnimatedVisibility(
+            visible = errorMessage != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -446,11 +471,17 @@ fun DownloaderScreen(
             }
         }
 
-        // 5. Resolved Media Result or Empty State
-        if (mediaResult != null) {
-            mediaResult?.let { result ->
-                when (result.type) {
-                    MediaType.VIDEO -> {
+        // 5. Resolved Media Result or Empty State (with smooth animation)
+        AnimatedVisibility(
+            visible = mediaResult != null || (!isResolving && errorMessage == null),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                if (mediaResult != null) {
+                    mediaResult?.let { result ->
+                        when (result.type) {
+                            MediaType.VIDEO -> {
                     // VIDEO result:
                     // - Correct aspect ratio preview
                     // - ExoPlayer initialized only for valid playable video
@@ -581,6 +612,26 @@ fun DownloaderScreen(
                     // - Download All (creates separate Room records for every image)
                     SlideshowView(
                         images = result.images,
+                        audioUrl = result.audioUrl,
+                        onDownloadAudio = if (!result.audioUrl.isNullOrBlank()) {
+                            {
+                                repository.startDownload(
+                                    sourceUrl = result.sourceUrl,
+                                    mediaUrl = result.audioUrl,
+                                    title = "${result.title} (Audio)",
+                                    thumbnail = result.coverUrl.orEmpty(),
+                                    mediaType = MediaType.AUDIO,
+                                    onDuplicate = {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.already_downloading),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                                Toast.makeText(context, context.getString(R.string.audio_download_started), Toast.LENGTH_SHORT).show()
+                            }
+                        } else null,
                         onDownloadSingleImage = { imgUrl, idx ->
                             repository.startDownload(
                                 sourceUrl = "${result.sourceUrl}#img_$idx",
@@ -612,20 +663,22 @@ fun DownloaderScreen(
                 else -> {}
             }
         }
-        } else if (!isResolving && errorMessage == null) {
-            // Empty State with illustration and helpful guidance
-            EmptyStateGuidanceView(
-                onPasteClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clipData = clipboard.primaryClip
-                    if (clipData != null && clipData.itemCount > 0) {
-                        val text = clipData.getItemAt(0).text?.toString().orEmpty()
-                        urlInput = text
-                    }
+    } else if (!isResolving && errorMessage == null) {
+        // Empty State with illustration and helpful guidance
+        EmptyStateGuidanceView(
+            onPasteClick = {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clipData = clipboard.primaryClip
+                if (clipData != null && clipData.itemCount > 0) {
+                    val text = clipData.getItemAt(0).text?.toString().orEmpty()
+                    urlInput = text
                 }
-            )
-        }
+            }
+        )
     }
+}
+}
+}
 }
 
 @Composable

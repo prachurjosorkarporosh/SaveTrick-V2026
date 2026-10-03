@@ -2,6 +2,7 @@ package com.example
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -57,6 +58,9 @@ class MainActivity : ComponentActivity() {
 
         repository = SaveTrickRepository(this)
         LocaleHelper.applyLocale(this, repository.preferences.getLanguage())
+
+        // Handle shared TikTok links from Intent (e.g. Share via SaveTrick)
+        handleIncomingIntent(intent)
 
         setContent {
             val currentTheme by repository.themeMode.collectAsState()
@@ -123,6 +127,34 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        if (intent == null) return
+
+        val action = intent.action
+        val type = intent.type
+
+        if (Intent.ACTION_SEND == action && type != null) {
+            if ("text/plain" == type) {
+                val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+                    ?: intent.getStringExtra(Intent.EXTRA_SUBJECT)
+                if (!sharedText.isNullOrBlank()) {
+                    repository.onIncomingSharedUrl(sharedText)
+                }
+            }
+        } else if (Intent.ACTION_VIEW == action) {
+            val dataUri = intent.data
+            if (dataUri != null) {
+                repository.onIncomingSharedUrl(dataUri.toString())
             }
         }
     }

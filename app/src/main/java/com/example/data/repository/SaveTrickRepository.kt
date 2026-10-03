@@ -43,6 +43,20 @@ class SaveTrickRepository(private val context: Context) {
     val isPro: StateFlow<Boolean> = preferences.isProFlow
     val userName: StateFlow<String> = preferences.userNameFlow
 
+    // Incoming shared link from TikTok share intent
+    private val _sharedIncomingUrl = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val sharedIncomingUrl: StateFlow<String?> = _sharedIncomingUrl
+
+    fun onIncomingSharedUrl(rawUrl: String?) {
+        if (!rawUrl.isNullOrBlank()) {
+            _sharedIncomingUrl.value = rawUrl
+        }
+    }
+
+    fun clearIncomingSharedUrl() {
+        _sharedIncomingUrl.value = null
+    }
+
     suspend fun resolveUrl(url: String): Result<MediaResult> {
         val sanitized = UrlValidator.sanitizeUrl(url)
         if (!UrlValidator.isTikTokUrl(sanitized)) {
