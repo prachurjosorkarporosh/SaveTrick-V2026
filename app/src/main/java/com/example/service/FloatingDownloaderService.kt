@@ -6,22 +6,22 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageButton
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -78,7 +78,9 @@ class FloatingDownloaderService : Service() {
             manager.createNotificationChannel(channel)
         }
 
-        val openAppIntent = Intent(this, MainActivity::class.java)
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
         val pendingIntent = PendingIntent.getActivity(
             this,
             101,
@@ -92,9 +94,20 @@ class FloatingDownloaderService : Service() {
             .setContentText("Tap to open full app or drag the floating popup")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
-        startForeground(1001, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1001, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            } else {
+                startForeground(1001, notification)
+            }
+        } catch (e: Exception) {
+            try {
+                startForeground(1001, notification)
+            } catch (_: Exception) {}
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -121,8 +134,6 @@ class FloatingDownloaderService : Service() {
             y = 120
         }
 
-        val inflater = LayoutInflater.from(this)
-        // Inflate modern programmatic card layout
         val rootView = buildFloatingLayout(initialWidth)
         floatingView = rootView
 
@@ -139,17 +150,17 @@ class FloatingDownloaderService : Service() {
         val density = resources.displayMetrics.density
 
         // Root container
-        val root = android.widget.FrameLayout(this).apply {
-            layoutParams = android.widget.FrameLayout.LayoutParams(
+        val root = FrameLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT
             )
         }
 
         // 1. Minimized Bubble View (shown when collapsed)
-        val bubbleView = android.widget.FrameLayout(this).apply {
+        val bubbleView = FrameLayout(this).apply {
             val size = (54 * density).toInt()
-            layoutParams = android.widget.FrameLayout.LayoutParams(size, size)
+            layoutParams = FrameLayout.LayoutParams(size, size)
             background = createBubbleDrawable()
             elevation = 16f
             visibility = View.GONE
@@ -158,7 +169,7 @@ class FloatingDownloaderService : Service() {
                 setImageResource(R.drawable.savetrick_logo)
                 val pad = (8 * density).toInt()
                 setPadding(pad, pad, pad, pad)
-                layoutParams = android.widget.FrameLayout.LayoutParams(size, size)
+                layoutParams = FrameLayout.LayoutParams(size, size)
             }
             addView(logoImg)
 
@@ -168,25 +179,25 @@ class FloatingDownloaderService : Service() {
         }
 
         // 2. Expanded Card View
-        val cardLayout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
+        val cardLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             background = createCardDrawable()
             val pad = (14 * density).toInt()
             setPadding(pad, pad, pad, pad)
             elevation = 20f
-            layoutParams = android.widget.LinearLayout.LayoutParams(
+            layoutParams = LinearLayout.LayoutParams(
                 widthPx,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
         }
 
         // Header (Title, Drag, Minimize, Close)
-        val header = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.HORIZONTAL
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
         }
 
@@ -195,7 +206,7 @@ class FloatingDownloaderService : Service() {
             setTextColor(android.graphics.Color.WHITE)
             textSize = 15f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
-            layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
         val btnMinimize = TextView(this).apply {
@@ -222,13 +233,13 @@ class FloatingDownloaderService : Service() {
         cardLayout.addView(header)
 
         // URL input row
-        val inputRow = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.HORIZONTAL
+        val inputRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             val topMargin = (10 * density).toInt()
-            val lp = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
             lp.topMargin = topMargin
             layoutParams = lp
@@ -244,11 +255,10 @@ class FloatingDownloaderService : Service() {
             val padH = (10 * density).toInt()
             val padV = (8 * density).toInt()
             setPadding(padH, padV, padH, padV)
-            layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            // Auto focus support
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setOnTouchListener { _, _ ->
                 params?.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-                windowManager.updateViewLayout(floatingView, params)
+                safeUpdateLayout()
                 false
             }
         }
@@ -258,20 +268,24 @@ class FloatingDownloaderService : Service() {
             textSize = 12f
             setTextColor(android.graphics.Color.WHITE)
             background = createPrimaryButtonDrawable()
-            val lp = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
                 (36 * density).toInt()
             )
             lp.marginStart = (8 * density).toInt()
             layoutParams = lp
 
             setOnClickListener {
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clipData = clipboard.primaryClip
-                if (clipData != null && clipData.itemCount > 0) {
-                    val text = clipData.getItemAt(0).text?.toString().orEmpty()
-                    val sanitized = UrlValidator.sanitizeUrl(text)
-                    editUrl.setText(sanitized)
+                try {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                    val clipData = clipboard?.primaryClip
+                    if (clipData != null && clipData.itemCount > 0) {
+                        val text = clipData.getItemAt(0).text?.toString().orEmpty()
+                        val sanitized = UrlValidator.sanitizeUrl(text)
+                        editUrl.setText(sanitized)
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@FloatingDownloaderService, "Could not access clipboard", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -285,9 +299,9 @@ class FloatingDownloaderService : Service() {
             text = "Ready to download from TikTok"
             setTextColor(android.graphics.Color.parseColor("#94A3B8"))
             textSize = 11.5f
-            val lp = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
             lp.topMargin = (8 * density).toInt()
             layoutParams = lp
@@ -299,8 +313,8 @@ class FloatingDownloaderService : Service() {
             max = 100
             progress = 0
             visibility = View.GONE
-            val lp = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 (6 * density).toInt()
             )
             lp.topMargin = (6 * density).toInt()
@@ -309,12 +323,12 @@ class FloatingDownloaderService : Service() {
         cardLayout.addView(progressBar)
 
         // Action Buttons Row (Download Video, Audio, All)
-        val actionRow = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.HORIZONTAL
+        val actionRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            val lp = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            val lp = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
             lp.topMargin = (10 * density).toInt()
             layoutParams = lp
@@ -325,7 +339,7 @@ class FloatingDownloaderService : Service() {
             textSize = 13f
             setTextColor(android.graphics.Color.WHITE)
             background = createPrimaryButtonDrawable()
-            layoutParams = android.widget.LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f)
+            layoutParams = LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f)
 
             setOnClickListener {
                 val input = editUrl.text.toString().trim()
@@ -435,7 +449,7 @@ class FloatingDownloaderService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     params?.x = initialX + (event.rawX - initialTouchX).toInt()
                     params?.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(floatingView, params)
+                    safeUpdateLayout()
                     true
                 }
                 else -> false
@@ -450,8 +464,18 @@ class FloatingDownloaderService : Service() {
         return root
     }
 
+    private fun safeUpdateLayout() {
+        floatingView?.let { view ->
+            if (view.isAttachedToWindow) {
+                try {
+                    windowManager.updateViewLayout(view, params)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     private fun collapseWindow() {
-        val root = floatingView as? android.widget.FrameLayout ?: return
+        val root = floatingView as? FrameLayout ?: return
         val cardLayout = root.getChildAt(0)
         val bubbleView = root.getChildAt(1)
 
@@ -462,11 +486,11 @@ class FloatingDownloaderService : Service() {
         params?.width = WindowManager.LayoutParams.WRAP_CONTENT
         params?.height = WindowManager.LayoutParams.WRAP_CONTENT
         params?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-        windowManager.updateViewLayout(floatingView, params)
+        safeUpdateLayout()
     }
 
     private fun expandWindow() {
-        val root = floatingView as? android.widget.FrameLayout ?: return
+        val root = floatingView as? FrameLayout ?: return
         val cardLayout = root.getChildAt(0)
         val bubbleView = root.getChildAt(1)
 
@@ -480,15 +504,15 @@ class FloatingDownloaderService : Service() {
         params?.width = targetWidth
         params?.height = WindowManager.LayoutParams.WRAP_CONTENT
         params?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-        windowManager.updateViewLayout(floatingView, params)
+        safeUpdateLayout()
     }
 
     private fun createCardDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
             cornerRadius = 28f
-            setColor(android.graphics.Color.parseColor("#F00A111E")) // Deep dark translucent
-            setStroke(2, android.graphics.Color.parseColor("#00E5FF")) // Neon Cyan border
+            setColor(android.graphics.Color.parseColor("#F00A111E"))
+            setStroke(2, android.graphics.Color.parseColor("#00E5FF"))
         }
     }
 
@@ -520,10 +544,12 @@ class FloatingDownloaderService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-        floatingView?.let {
-            try {
-                windowManager.removeView(it)
-            } catch (_: Exception) {}
+        floatingView?.let { view ->
+            if (view.isAttachedToWindow) {
+                try {
+                    windowManager.removeView(view)
+                } catch (_: Exception) {}
+            }
         }
     }
 }

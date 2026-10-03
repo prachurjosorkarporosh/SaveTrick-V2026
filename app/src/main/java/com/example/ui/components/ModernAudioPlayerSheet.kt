@@ -107,12 +107,20 @@ fun ModernAudioPlayerSheet(
                     totalDuration = exoPlayer.duration.coerceAtLeast(0L)
                 }
             }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                android.util.Log.e("ModernAudioPlayer", "Audio error: ${error.message}", error)
+                android.widget.Toast.makeText(context, "Could not stream audio track", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
         exoPlayer.addListener(listener)
 
         onDispose {
-            exoPlayer.removeListener(listener)
-            exoPlayer.release()
+            try {
+                exoPlayer.removeListener(listener)
+                exoPlayer.stop()
+                exoPlayer.release()
+            } catch (_: Exception) {}
         }
     }
 

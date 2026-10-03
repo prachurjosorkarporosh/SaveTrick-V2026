@@ -218,16 +218,18 @@ fun DownloaderScreen(
     // Auto-detect clipboard on first screen open
     LaunchedEffect(Unit) {
         if (urlInput.isBlank() && repository.preferences.isAutoPasteFromClipboard()) {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clipData = clipboard.primaryClip
-            if (clipData != null && clipData.itemCount > 0) {
-                val clipText = clipData.getItemAt(0).text?.toString().orEmpty()
-                if (UrlValidator.isTikTokUrl(clipText)) {
-                    val sanitized = UrlValidator.sanitizeUrl(clipText)
-                    urlInput = sanitized
-                    Toast.makeText(context, "Auto-pasted TikTok link from clipboard", Toast.LENGTH_SHORT).show()
+            try {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                val clipData = clipboard?.primaryClip
+                if (clipData != null && clipData.itemCount > 0) {
+                    val clipText = clipData.getItemAt(0).text?.toString().orEmpty()
+                    if (UrlValidator.isTikTokUrl(clipText)) {
+                        val sanitized = UrlValidator.sanitizeUrl(clipText)
+                        urlInput = sanitized
+                        Toast.makeText(context, "Auto-pasted TikTok link from clipboard", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            }
+            } catch (_: Exception) {}
         }
     }
 
@@ -293,17 +295,21 @@ fun DownloaderScreen(
 
                 Button(
                     onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
-                            showOverlayPermissionDialog = true
-                        } else {
-                            val serviceIntent = Intent(context, FloatingDownloaderService::class.java)
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                context.startForegroundService(serviceIntent)
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
+                                showOverlayPermissionDialog = true
                             } else {
-                                context.startService(serviceIntent)
+                                val serviceIntent = Intent(context, FloatingDownloaderService::class.java)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    context.startForegroundService(serviceIntent)
+                                } else {
+                                    context.startService(serviceIntent)
+                                }
+                                Toast.makeText(context, "SaveTrick Floating Pop-up activated!", Toast.LENGTH_SHORT).show()
+                                (context as? Activity)?.moveTaskToBack(true)
                             }
-                            Toast.makeText(context, "SaveTrick Floating Pop-up activated!", Toast.LENGTH_SHORT).show()
-                            (context as? Activity)?.moveTaskToBack(true)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Could not launch overlay: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = accentColor),
@@ -497,11 +503,15 @@ fun DownloaderScreen(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clipData = clipboard.primaryClip
-                            if (clipData != null && clipData.itemCount > 0) {
-                                val text = clipData.getItemAt(0).text?.toString().orEmpty()
-                                urlInput = UrlValidator.sanitizeUrl(text)
+                            try {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                val clipData = clipboard?.primaryClip
+                                if (clipData != null && clipData.itemCount > 0) {
+                                    val text = clipData.getItemAt(0).text?.toString().orEmpty()
+                                    urlInput = UrlValidator.sanitizeUrl(text)
+                                }
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Could not access clipboard", Toast.LENGTH_SHORT).show()
                             }
                         },
                         shape = RoundedCornerShape(10.dp),
