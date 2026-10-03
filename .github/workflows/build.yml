@@ -1,4 +1,4 @@
-name: Build SaveTrick Android APK
+name: Build SaveTrick APK
 
 on:
   push:
@@ -7,71 +7,73 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
-    name: Build & Generate APKs
+    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Java JDK 21
+      - name: Set up Java Development Kit (JDK 17)
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
 
-      - name: Create environment configuration
+      - name: Prepare environment
         run: |
-          if [ ! -f .env ]; then
-            cp .env.example .env 2>/dev/null || touch .env
+          touch .env
+          if [ -f .env.example ]; then
+            cat .env.example >> .env
           fi
 
-      - name: Prepare Signing Keystore
+      - name: Create debug keystore
         run: |
           if [ -f debug.keystore.base64 ]; then
             base64 -d debug.keystore.base64 > debug.keystore
-            echo "Keystore decoded successfully from base64"
-          elif [ ! -f debug.keystore ]; then
-            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            echo "Generated new debug keystore for build"
+          else
+            keytool -genkeypair \
+              -v \
+              -keystore debug.keystore \
+              -storepass android \
+              -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-      - name: Grant Execute Permission to Gradlew
-        run: chmod +x ./gradlew
-
-      - name: Build Debug & Release APKs
-        run: ./gradlew :app:assembleDebug :app:assembleRelease --stacktrace
-
-      - name: Rename and Prepare APK Artifacts
+      - name: Make Gradlew Executable if present
         run: |
-          mkdir -p artifacts
-          find app/build/outputs/apk/debug -name "*.apk" -exec cp {} artifacts/SaveTrick-debug.apk \;
-          find app/build/outputs/apk/release -name "*.apk" -exec cp {} artifacts/SaveTrick-release-unsigned.apk \;
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+          fi
 
-      - name: Upload Debug APK
+      - name: Build Debug APK
+        run: |
+          if [ -f "./gradlew" ]; then
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            gradle assembleDebug --no-daemon --stacktrace
+          fi
+
+      - name: Find APK
+        run: |
+          echo "Generated APK files:"
+          find . -type f -name "*.apk" -print
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SaveTrick-Debug-APK
-          path: artifacts/SaveTrick-debug.apk
+          name: SaveTrick-APK
+          path: "**/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SaveTrick-Release-APK
-          path: artifacts/SaveTrick-release-unsigned.apk
-          if-no-files-found: warn
           retention-days: 14
