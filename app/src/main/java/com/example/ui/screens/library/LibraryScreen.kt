@@ -65,6 +65,7 @@ import com.example.R
 import com.example.data.local.DownloadEntity
 import com.example.data.model.MediaType
 import com.example.data.repository.SaveTrickRepository
+import com.example.ui.components.AdBanner
 import com.example.ui.components.ModernAudioPlayerSheet
 import com.example.ui.components.ModernPhotoViewerDialog
 import com.example.ui.components.ModernVideoPlayerDialog
@@ -269,6 +270,15 @@ fun LibraryScreen(
                 }
             }
         }
+
+        // Sponsored Ad Banner in Library
+        AdBanner(
+            isPro = false,
+            onUpgradeClick = {
+                Toast.makeText(context, "SaveTrick PRO: Enjoy 100% ad-free experience", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
 
     // Modern In-App Video Player Dialog

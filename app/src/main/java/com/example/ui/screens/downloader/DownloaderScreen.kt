@@ -521,7 +521,16 @@ fun DownloaderScreen(
             }
         }
 
-        // 4. Error Message Banner
+        // 4. Prominent Sponsored Ad Banner (Always visible right on the main screen)
+        AdBanner(
+            isPro = false,
+            onUpgradeClick = {
+                Toast.makeText(context, "SaveTrick PRO: Enjoy 100% ad-free experience", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.padding(vertical = 2.dp)
+        )
+
+        // 5. Error Message Banner
         AnimatedVisibility(
             visible = errorMessage != null,
             enter = fadeIn() + expandVertically(),
@@ -716,15 +725,6 @@ fun DownloaderScreen(
                 }
             }
         }
-
-        // Sponsored Ad Banner
-        AdBanner(
-            isPro = false,
-            onUpgradeClick = {
-                Toast.makeText(context, "SaveTrick PRO: Enjoy 100% ad-free experience", Toast.LENGTH_SHORT).show()
-            },
-            modifier = Modifier.padding(top = 4.dp)
-        )
 
         Spacer(modifier = Modifier.height(24.dp))
     }
