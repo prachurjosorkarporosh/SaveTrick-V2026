@@ -7,9 +7,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- Storage permissions for saving media to device storage & Gallery -->
@@ -36,18 +34,30 @@
         android:requestLegacyExternalStorage="true"
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.MyApplication">
+
+        <!-- Main Launcher Activity (Instant startup, no blank screen) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:label="@string/app_name"
-            android:supportsPictureInPicture="true"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!-- SnapTube / VidMate style Direct TikTok Share Bottom Sheet Activity -->
+        <activity
+            android:name=".ui.quickdownload.QuickDownloadActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.QuickDownload"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTask">
 
             <!-- Receive shared links directly from TikTok Share sheet (Send to SaveTrick) -->
             <intent-filter>
@@ -56,7 +66,7 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
-            <!-- Support opening TikTok links directly into SaveTrick -->
+            <!-- Support opening TikTok links directly into SaveTrick Quick Downloader -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -69,13 +79,6 @@
                 <data android:host="douyin.com" />
             </intent-filter>
         </activity>
-
-        <!-- Floating Overlay Popup Downloader Service (Drag, Resize, Close over other apps) -->
-        <service
-            android:name=".service.FloatingDownloaderService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

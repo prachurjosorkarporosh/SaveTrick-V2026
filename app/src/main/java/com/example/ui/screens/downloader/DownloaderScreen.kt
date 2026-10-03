@@ -86,7 +86,6 @@ import com.example.R
 import com.example.data.model.MediaResult
 import com.example.data.model.MediaType
 import com.example.data.repository.SaveTrickRepository
-import com.example.service.FloatingDownloaderService
 import com.example.ui.components.BrandHeader
 import com.example.ui.components.MediaThumbnailPreviewCard
 import com.example.ui.components.ModernAudioPlayerSheet
@@ -124,7 +123,6 @@ fun DownloaderScreen(
     var activeVideoPlayer by remember { mutableStateOf<Pair<String, String>?>(null) }
     var activeAudioPlayer by remember { mutableStateOf<Triple<String, String, String?>?>(null) }
     var activePhotoViewer by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
-    var showOverlayPermissionDialog by remember { mutableStateOf(false) }
 
     fun handleResolve(targetUrl: String = urlInput, autoDownload: Boolean = false) {
         val trimmed = targetUrl.trim()
@@ -244,85 +242,6 @@ fun DownloaderScreen(
     ) {
         // 1. SaveTrick Brand Header
         BrandHeader(showVersion = true)
-
-        // Floating Popup Window Quick Action Banner ("onnono epe thekeo eta popup kore use kora jabe app ta")
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)),
-            shadowElevation = 2.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(accentColor.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Layers,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Floating Pop-up Mode",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "Download while browsing TikTok & other apps",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 11.5.sp
-                            )
-                        )
-                    }
-                }
-
-                Button(
-                    onClick = {
-                        try {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
-                                showOverlayPermissionDialog = true
-                            } else {
-                                val serviceIntent = Intent(context, FloatingDownloaderService::class.java)
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    context.startForegroundService(serviceIntent)
-                                } else {
-                                    context.startService(serviceIntent)
-                                }
-                                Toast.makeText(context, "SaveTrick Floating Pop-up activated!", Toast.LENGTH_SHORT).show()
-                                (context as? Activity)?.moveTaskToBack(true)
-                            }
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Could not launch overlay: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = "Pop-up",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-            }
-        }
 
         // 3D Visual Hero Banner with Glossy Neon Effect
         Surface(
@@ -826,37 +745,6 @@ fun DownloaderScreen(
                     mediaType = MediaType.IMAGE
                 )
                 Toast.makeText(context, "Downloaded Photo #$index", Toast.LENGTH_SHORT).show()
-            }
-        )
-    }
-
-    // Overlay Permission Request Dialog
-    if (showOverlayPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showOverlayPermissionDialog = false },
-            title = { Text("Enable Floating Pop-up") },
-            text = {
-                Text("To use SaveTrick over TikTok and other apps, allow 'Display over other apps' in your device settings.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showOverlayPermissionDialog = false
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:${context.packageName}")
-                        )
-                        context.startActivity(intent)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                ) {
-                    Text("Open Settings")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showOverlayPermissionDialog = false }) {
-                    Text("Cancel")
-                }
             }
         )
     }

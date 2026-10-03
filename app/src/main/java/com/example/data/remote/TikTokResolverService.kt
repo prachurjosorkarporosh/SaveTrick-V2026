@@ -14,29 +14,37 @@ import java.util.concurrent.TimeUnit
 class TikTokResolverService {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(7, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
         .build()
 
+    private val fastMemoryCache = java.util.concurrent.ConcurrentHashMap<String, MediaResult>()
+
     suspend fun resolveTikTokUrl(tiktokUrl: String): Result<MediaResult> = withContext(Dispatchers.IO) {
+        fastMemoryCache[tiktokUrl]?.let {
+            return@withContext Result.success(it)
+        }
         try {
             // First primary resolver: TikWM API (HD video, slideshows, audios)
             val tikwmResult = tryResolveTikWm(tiktokUrl)
             if (tikwmResult.isSuccess) {
+                tikwmResult.getOrNull()?.let { fastMemoryCache[tiktokUrl] = it }
                 return@withContext tikwmResult
             }
 
             // Second fallback resolver: TiklyDown
             val fallbackResult = tryResolveFallback(tiktokUrl)
             if (fallbackResult.isSuccess) {
+                fallbackResult.getOrNull()?.let { fastMemoryCache[tiktokUrl] = it }
                 return@withContext fallbackResult
             }
 
             // Third fallback: Lovetik API
             val lovetikResult = tryResolveLovetik(tiktokUrl)
             if (lovetikResult.isSuccess) {
+                lovetikResult.getOrNull()?.let { fastMemoryCache[tiktokUrl] = it }
                 return@withContext lovetikResult
             }
 
