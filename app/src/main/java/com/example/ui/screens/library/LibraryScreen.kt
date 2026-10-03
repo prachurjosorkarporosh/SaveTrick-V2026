@@ -628,57 +628,9 @@ private fun EmptyState(message: String) {
 }
 
 private fun openFile(context: Context, item: DownloadEntity) {
-    try {
-        val file = File(item.filePath)
-        if (!file.exists()) {
-            Toast.makeText(context, "File no longer exists on disk", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val uri = try {
-            FileProvider.getUriForFile(
-                context,
-                "com.prachurjo.savetrick.app.fileprovider",
-                file
-            )
-        } catch (_: Exception) {
-            Uri.parse(item.fileUri)
-        }
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, item.mimeType.ifBlank { "*/*" })
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        Toast.makeText(context, "Unable to open file: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
+    com.example.util.MediaShareHelper.openMediaFile(context, item)
 }
 
 private fun shareFile(context: Context, item: DownloadEntity) {
-    try {
-        val file = File(item.filePath)
-        if (!file.exists()) {
-            Toast.makeText(context, "File no longer exists", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val uri = try {
-            FileProvider.getUriForFile(
-                context,
-                "com.prachurjo.savetrick.app.fileprovider",
-                file
-            )
-        } catch (_: Exception) {
-            Uri.parse(item.fileUri)
-        }
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = item.mimeType.ifBlank { "*/*" }
-            putExtra(Intent.EXTRA_STREAM, uri)
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-        }
-        val chooser = Intent.createChooser(intent, "Share Media").apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        context.startActivity(chooser)
-    } catch (e: Exception) {
-        Toast.makeText(context, "Unable to share file: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
+    com.example.util.MediaShareHelper.shareMediaFile(context, item)
 }
