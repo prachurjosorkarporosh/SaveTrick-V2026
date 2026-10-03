@@ -42,6 +42,14 @@
     <string name="image_downloading">ছবি #%d ডাউনলোড হচ্ছে</string>
     <string name="queued_images_download">%d টি ছবি ডাউনলোডের জন্য প্রস্তুত</string>
     <string name="retrying_download">পুনরায় ডাউনলোডের চেষ্টা চলছে...</string>
+    <string name="empty_home_title">মিডিয়া সেভ করতে প্রস্তুত</string>
+    <string name="empty_home_subtitle">ওয়াটারমার্ক ছাড়া ভিডিও বা ফটো স্লাইডশো ডাউনলোড করতে উপরে টিকটক লিংক পেস্ট করুন।</string>
+    <string name="step_1_title">১. লিংক কপি করুন</string>
+    <string name="step_1_desc">টিকটক অ্যাপে যান, যেকোনো ভিডিওর Share চেপে Copy Link চাপুন।</string>
+    <string name="step_2_title">২. পেস্ট ও রেজলভ</string>
+    <string name="step_2_desc">এখানে পেস্ট বাটনে চাপুন এবং Download / Resolve বাটনে ক্লিক করুন।</string>
+    <string name="step_3_title">৩. এইচডি মিডিয়া সেভ করুন</string>
+    <string name="step_3_desc">ফুল এইচডি ভিডিও, অডিও ট্র্যাক বা সব ছবি সহজে ডাউনলোড করুন।</string>
 
     <!-- Library Screen -->
     <string name="tab_downloading">ডাউনলোড হচ্ছে</string>

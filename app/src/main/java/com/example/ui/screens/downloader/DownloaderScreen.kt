@@ -368,10 +368,11 @@ fun DownloaderScreen(
             }
         }
 
-        // 5. Resolved Media Result
-        mediaResult?.let { result ->
-            when (result.type) {
-                MediaType.VIDEO -> {
+        // 5. Resolved Media Result or Empty State
+        if (mediaResult != null) {
+            mediaResult?.let { result ->
+                when (result.type) {
+                    MediaType.VIDEO -> {
                     // VIDEO result:
                     // - Correct aspect ratio preview
                     // - ExoPlayer initialized only for valid playable video
@@ -531,6 +532,175 @@ fun DownloaderScreen(
                     )
                 }
                 else -> {}
+            }
+        }
+        } else if (!isResolving && errorMessage == null) {
+            // Empty State with illustration and helpful guidance
+            EmptyStateGuidanceView(
+                onPasteClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clipData = clipboard.primaryClip
+                    if (clipData != null && clipData.itemCount > 0) {
+                        val text = clipData.getItemAt(0).text?.toString().orEmpty()
+                        urlInput = text
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun EmptyStateGuidanceView(
+    onPasteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+        shadowElevation = 1.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("empty_state_guidance_card")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Empty State Illustration
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.img_empty_downloader),
+                    contentDescription = "Empty State Illustration",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.empty_home_title),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+
+                Text(
+                    text = stringResource(R.string.empty_home_subtitle),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
+                    ),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+            }
+
+            // Quick Guidance Steps
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                GuidanceStepCard(
+                    stepNumber = "1",
+                    title = stringResource(R.string.step_1_title),
+                    description = stringResource(R.string.step_1_desc),
+                    icon = Icons.Default.Link,
+                    accentColor = ElectricBlue
+                )
+
+                GuidanceStepCard(
+                    stepNumber = "2",
+                    title = stringResource(R.string.step_2_title),
+                    description = stringResource(R.string.step_2_desc),
+                    icon = Icons.Default.ContentPaste,
+                    accentColor = ElectricCyan
+                )
+
+                GuidanceStepCard(
+                    stepNumber = "3",
+                    title = stringResource(R.string.step_3_title),
+                    description = stringResource(R.string.step_3_desc),
+                    icon = Icons.Default.Download,
+                    accentColor = com.example.ui.theme.SuccessGreen
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuidanceStepCard(
+    stepNumber: String,
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accentColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(accentColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.5.sp,
+                        lineHeight = 15.sp
+                    )
+                )
             }
         }
     }

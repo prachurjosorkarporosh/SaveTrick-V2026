@@ -42,6 +42,14 @@
     <string name="image_downloading">Image #%d downloading</string>
     <string name="queued_images_download">Queued %d images for download</string>
     <string name="retrying_download">Retrying download...</string>
+    <string name="empty_home_title">Ready to Save Media</string>
+    <string name="empty_home_subtitle">Paste any TikTok video or photo slideshow link above to preview and download without watermark.</string>
+    <string name="step_1_title">1. Copy Link</string>
+    <string name="step_1_desc">Open TikTok, tap Share on any video, and choose Copy Link.</string>
+    <string name="step_2_title">2. Paste &amp; Resolve</string>
+    <string name="step_2_desc">Tap Paste above and click Download / Resolve.</string>
+    <string name="step_3_title">3. Save HD Media</string>
+    <string name="step_3_desc">Download full HD video, audio track, or all photos directly.</string>
 
     <!-- Library Screen -->
     <string name="tab_downloading">Downloading</string>
