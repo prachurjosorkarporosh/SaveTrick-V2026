@@ -82,23 +82,36 @@ class MainActivity : ComponentActivity() {
                 LocaleHelper.applyLocale(this@MainActivity, currentLanguage)
             }
 
-            // Permission launcher for Android 13+ Notifications
-            val permissionLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestPermission()
-            ) { isGranted ->
-                repository.preferences.setNotificationsEnabled(isGranted)
+            // Permission launcher for Storage & Android 13+ Notifications
+            val permissionsLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestMultiplePermissions()
+            ) { permissions ->
+                val notifGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: true
+                repository.preferences.setNotificationsEnabled(notifGranted)
             }
 
             LaunchedEffect(Unit) {
+                val neededPermissions = mutableListOf<String>()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    val hasPermission = ContextCompat.checkSelfPermission(
-                        this@MainActivity,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
-
-                    if (!hasPermission) {
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                        neededPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
                     }
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
+                        neededPermissions.add(Manifest.permission.READ_MEDIA_VIDEO)
+                    }
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                        neededPermissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+                    }
+                } else {
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        neededPermissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    }
+                    if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        neededPermissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                    }
+                }
+                if (neededPermissions.isNotEmpty()) {
+                    permissionsLauncher.launch(neededPermissions.toTypedArray())
                 }
             }
 
