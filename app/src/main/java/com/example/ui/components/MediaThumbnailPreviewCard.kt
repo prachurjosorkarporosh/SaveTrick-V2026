@@ -1,8 +1,10 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,11 +37,13 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -47,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,9 +85,11 @@ fun MediaThumbnailPreviewCard(
     onDownloadAudio: (() -> Unit)? = null,
     onPlayAudioPreview: (() -> Unit)? = null,
     onDownloadAllPhotos: (() -> Unit)? = null,
+    onShareMedia: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var selectedPhotoIndex by remember { mutableIntStateOf(0) }
+    var isDownloadingInitiated by remember { mutableStateOf(false) }
 
     Surface(
         modifier = modifier
@@ -131,26 +138,43 @@ fun MediaThumbnailPreviewCard(
                     }
                 }
 
-                if (media.durationSeconds > 0) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color.Black.copy(alpha = 0.5f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (media.durationSeconds > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.Black.copy(alpha = 0.5f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = FormatUtils.formatDuration(media.durationSeconds),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp)
+                                )
+                            }
+                        }
+                    }
+
+                    if (onShareMedia != null) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        IconButton(
+                            onClick = onShareMedia,
+                            modifier = Modifier.size(30.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(13.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = FormatUtils.formatDuration(media.durationSeconds),
-                                color = Color.White,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp)
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                tint = accentColor,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -424,7 +448,10 @@ fun MediaThumbnailPreviewCard(
                 if (media.type == MediaType.VIDEO) {
                     // Final Save Video Button
                     Button(
-                        onClick = onDownloadVideo,
+                        onClick = {
+                            isDownloadingInitiated = true
+                            onDownloadVideo()
+                        },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                         modifier = Modifier
@@ -468,7 +495,10 @@ fun MediaThumbnailPreviewCard(
 
                             if (onDownloadAudio != null) {
                                 Button(
-                                    onClick = onDownloadAudio,
+                                    onClick = {
+                                        isDownloadingInitiated = true
+                                        onDownloadAudio()
+                                    },
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                                     modifier = Modifier.weight(1f)
@@ -488,7 +518,10 @@ fun MediaThumbnailPreviewCard(
                     // Slideshow: Save All Photos
                     if (onDownloadAllPhotos != null) {
                         Button(
-                            onClick = onDownloadAllPhotos,
+                            onClick = {
+                                isDownloadingInitiated = true
+                                onDownloadAllPhotos()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                             modifier = Modifier
@@ -532,7 +565,10 @@ fun MediaThumbnailPreviewCard(
                             }
 
                             Button(
-                                onClick = onDownloadAudio,
+                                onClick = {
+                                    isDownloadingInitiated = true
+                                    onDownloadAudio()
+                                },
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                                 modifier = Modifier.weight(1f)
@@ -546,6 +582,62 @@ fun MediaThumbnailPreviewCard(
                                 Text("Save Audio")
                             }
                         }
+                    }
+                }
+
+                // Small Indeterminate Progress Bar below download button (visual feedback when clicked)
+                AnimatedVisibility(
+                    visible = isDownloadingInitiated,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp)),
+                            color = accentColor,
+                            trackColor = accentColor.copy(alpha = 0.2f)
+                        )
+                        Text(
+                            text = "Initiating download... Saving to Gallery",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 11.5.sp,
+                                color = accentColor,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                    }
+                }
+
+                if (onShareMedia != null) {
+                    OutlinedButton(
+                        onClick = onShareMedia,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .testTag("btn_share_media_preview")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Share Video Link / Media",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
                     }
                 }
             }

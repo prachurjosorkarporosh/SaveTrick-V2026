@@ -623,7 +623,15 @@ fun DownloaderScreen(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
-                        } else null
+                        } else null,
+                        onShareMedia = {
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, "${result.title}\n${result.sourceUrl}\n\nDownloaded via SaveTrick (No Watermark)")
+                                putExtra(Intent.EXTRA_SUBJECT, result.title)
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Share Media Link"))
+                        }
                     )
 
                     // If it's a slideshow, also show individual photo cards below
@@ -716,7 +724,15 @@ fun DownloaderScreen(
         ModernVideoPlayerDialog(
             videoUrl = vUrl,
             title = title,
-            onDismiss = { activeVideoPlayer = null }
+            onDismiss = { activeVideoPlayer = null },
+            onShare = {
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "$title\n$vUrl\n\nShared via SaveTrick")
+                    putExtra(Intent.EXTRA_SUBJECT, title)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Share Video"))
+            }
         )
     }
 
@@ -726,7 +742,15 @@ fun DownloaderScreen(
             audioUrl = aUrl,
             title = title,
             thumbnailUrl = thumb,
-            onDismiss = { activeAudioPlayer = null }
+            onDismiss = { activeAudioPlayer = null },
+            onShare = {
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "$title\n$aUrl\n\nShared via SaveTrick")
+                    putExtra(Intent.EXTRA_SUBJECT, title)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Share Audio"))
+            }
         )
     }
 
@@ -745,6 +769,13 @@ fun DownloaderScreen(
                     mediaType = MediaType.IMAGE
                 )
                 Toast.makeText(context, "Downloaded Photo #$index", Toast.LENGTH_SHORT).show()
+            },
+            onShareSingle = { url, index ->
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "TikTok Photo #$index: $url\nShared via SaveTrick")
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Share Photo"))
             }
         )
     }

@@ -169,7 +169,39 @@
     .nav-actions {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
+    }
+
+    /* About button in top navigation */
+    .nav-about-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-about-btn:hover {
+      background: rgba(37, 244, 238, 0.15);
+      border-color: var(--tiktok-cyan);
+      color: var(--tiktok-cyan);
+      box-shadow: 0 0 16px rgba(37, 244, 238, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .nav-about-btn svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
     }
 
     .badge-release {
@@ -297,6 +329,65 @@
       width: 26px;
       height: 26px;
       fill: currentColor;
+    }
+
+    /* Small indeterminate progress bar below download button */
+    .download-progress-container {
+      display: none;
+      margin-top: 16px;
+      text-align: center;
+      animation: fadeInProgress 0.3s ease forwards;
+    }
+
+    .download-progress-track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .download-progress-indeterminate {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 35%;
+      background: linear-gradient(90deg, var(--tiktok-red) 0%, var(--tiktok-cyan) 100%);
+      border-radius: 999px;
+      box-shadow: 0 0 14px var(--tiktok-cyan);
+      animation: indeterminateProgress 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes indeterminateProgress {
+      0% {
+        left: -35%;
+        width: 25%;
+      }
+      50% {
+        left: 30%;
+        width: 55%;
+      }
+      100% {
+        left: 100%;
+        width: 25%;
+      }
+    }
+
+    @keyframes fadeInProgress {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .download-progress-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--tiktok-cyan);
+      font-weight: 600;
     }
 
     .hero-meta-row {
@@ -715,6 +806,151 @@
         gap: 8px;
       }
     }
+
+    /* About Modal Dialog */
+    .about-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 6, 12, 0.88);
+      backdrop-filter: blur(14px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .about-modal-backdrop.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .about-modal-card {
+      background: #0E131F;
+      border: 1px solid rgba(37, 244, 238, 0.35);
+      border-radius: 28px;
+      max-width: 500px;
+      width: 100%;
+      padding: 34px 28px;
+      position: relative;
+      box-shadow: 
+        0 25px 70px rgba(0, 0, 0, 0.85), 
+        0 0 40px rgba(37, 244, 238, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .about-modal-backdrop.active .about-modal-card {
+      transform: scale(1);
+    }
+
+    .about-modal-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .about-modal-close:hover {
+      background: var(--tiktok-red);
+      border-color: var(--tiktok-red);
+      transform: rotate(90deg);
+    }
+
+    .about-modal-close svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .about-head-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .about-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      color: #FFF;
+    }
+
+    .about-tagline {
+      color: var(--tiktok-cyan);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .about-desc {
+      color: var(--text-secondary);
+      font-size: 14.5px;
+      line-height: 1.65;
+      margin-bottom: 22px;
+    }
+
+    .about-features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      margin-bottom: 24px;
+    }
+
+    .about-feat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13.5px;
+    }
+
+    .about-feat-item strong {
+      color: #FFF;
+    }
+
+    .about-feat-icon {
+      color: var(--tiktok-cyan);
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .about-btn-done {
+      width: 100%;
+      background: linear-gradient(135deg, var(--tiktok-red), var(--tiktok-cyan));
+      border: none;
+      color: #FFF;
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 13px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 20px rgba(254, 44, 85, 0.4);
+    }
+
+    .about-btn-done:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
   </style>
 </head>
 <body>
@@ -738,6 +974,12 @@
       </div>
 
       <div class="nav-actions">
+        <button class="nav-about-btn" id="openAboutBtn" aria-label="About SaveTrick" title="About SaveTrick">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+          <span>About</span>
+        </button>
         <div class="badge-release">
           <span class="pulse-dot"></span>
           v2.5.7 Stable
@@ -768,6 +1010,17 @@
           </svg>
           Download APK (v2.5.7)
         </a>
+
+        <!-- Small Indeterminate Progress Bar (animates when download button is clicked) -->
+        <div class="download-progress-container" id="downloadProgressContainer">
+          <div class="download-progress-track">
+            <div class="download-progress-indeterminate"></div>
+          </div>
+          <div class="download-progress-label">
+            <span class="pulse-dot" style="width: 7px; height: 7px;"></span>
+            Initiating download... Saving SaveTrick-debug.apk
+          </div>
+        </div>
 
         <div class="hero-meta-row">
           <div class="meta-box">
@@ -961,5 +1214,91 @@
     </footer>
   </div>
 
+  <!-- About SaveTrick Modal Dialog -->
+  <div class="about-modal-backdrop" id="aboutModal">
+    <div class="about-modal-card">
+      <button class="about-modal-close" id="closeAboutBtn" aria-label="Close">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+
+      <div class="about-head-row">
+        <div class="logo-gem" style="width: 44px; height: 44px;">
+          <svg viewBox="0 0 24 24" style="width: 24px; height: 24px;">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="about-title">SaveTrick V2026</div>
+          <div class="about-tagline">Version 2.5.7 (Build 16) • Stable Release</div>
+        </div>
+      </div>
+
+      <p class="about-desc">
+        SaveTrick is a lightweight, high-performance TikTok media downloader crafted natively with Kotlin and Jetpack Compose for Android. It downloads genuine watermark-free media straight into your device gallery with zero quality degradation.
+      </p>
+
+      <div class="about-features-list">
+        <div class="about-feat-item">
+          <span class="about-feat-icon">⚡</span>
+          <div><strong>1080p Pure FHD Video</strong> — Original bitrate stream without TikTok watermark or end logos.</div>
+        </div>
+        <div class="about-feat-item">
+          <span class="about-feat-icon">📸</span>
+          <div><strong>Photo Album Batch</strong> — Downloads all photos from slideshow carousels in one click.</div>
+        </div>
+        <div class="about-feat-item">
+          <span class="about-feat-icon">🎵</span>
+          <div><strong>Studio 320kbps MP3</strong> — Extracts clean audio ready for music players and ringtones.</div>
+        </div>
+        <div class="about-feat-item">
+          <span class="about-feat-icon">🛡️</span>
+          <div><strong>Zero Ads & 100% Free</strong> — No accounts, no subscriptions, completely safe for Android 7.0–15.</div>
+        </div>
+      </div>
+
+      <button class="about-btn-done" id="doneAboutBtn">Got it</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Progress bar on download click
+      var btn = document.getElementById('primaryDownloadBtn');
+      var prog = document.getElementById('downloadProgressContainer');
+      if (btn && prog) {
+        btn.addEventListener('click', function() {
+          prog.style.display = 'block';
+        });
+      }
+
+      // About Modal Controller
+      var openAbout = document.getElementById('openAboutBtn');
+      var closeAbout = document.getElementById('closeAboutBtn');
+      var doneAbout = document.getElementById('doneAboutBtn');
+      var modal = document.getElementById('aboutModal');
+
+      function showModal() {
+        if (modal) modal.classList.add('active');
+      }
+
+      function hideModal() {
+        if (modal) modal.classList.remove('active');
+      }
+
+      if (openAbout) openAbout.addEventListener('click', showModal);
+      if (closeAbout) closeAbout.addEventListener('click', hideModal);
+      if (doneAbout) doneAbout.addEventListener('click', hideModal);
+
+      if (modal) {
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            hideModal();
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
