@@ -136,8 +136,86 @@ fun DownloaderScreen(
         // 1. SaveTrick Brand Header (Logo + Name + Version, NO developer info)
         BrandHeader(
             showVersion = true,
-            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
         )
+
+        // 3D Visual Hero Banner with Glossy Neon Effect
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, ElectricCyan.copy(alpha = 0.35f)),
+            shadowElevation = 4.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("home_3d_hero_banner")
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(145.dp)
+                    .clip(RoundedCornerShape(18.dp))
+            ) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.img_home_banner_3d),
+                    contentDescription = "SaveTrick 3D Banner",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+                // Gradient Scrim for readable branding
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                colors = listOf(
+                                    androidx.compose.ui.graphics.Color(0xCC060B12),
+                                    androidx.compose.ui.graphics.Color(0x66060B12),
+                                    androidx.compose.ui.graphics.Color.Transparent
+                                )
+                            )
+                        )
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = ElectricBlue.copy(alpha = 0.85f),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    ) {
+                        Text(
+                            text = "ULTRA HD • NO WATERMARK",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                color = androidx.compose.ui.graphics.Color.White,
+                                fontSize = 10.sp,
+                                letterSpacing = 1.sp
+                            ),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    Text(
+                        text = "Save Any TikTok Media",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            fontSize = 19.sp
+                        )
+                    )
+                    Text(
+                        text = "Instant 3D-accelerated Video, Audio & Slideshows",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = ElectricCyan,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            }
+        }
 
         // 2. Tab selector: Single Link vs Batch Downloader
         Surface(
