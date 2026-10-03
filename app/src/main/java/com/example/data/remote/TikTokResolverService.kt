@@ -22,19 +22,29 @@ class TikTokResolverService {
 
     suspend fun resolveTikTokUrl(tiktokUrl: String): Result<MediaResult> = withContext(Dispatchers.IO) {
         try {
-            // First primary resolver: TikWM API
+            // First primary resolver: TikWM API (HD video, slideshows, audios)
             val tikwmResult = tryResolveTikWm(tiktokUrl)
             if (tikwmResult.isSuccess) {
                 return@withContext tikwmResult
             }
 
-            // Fallback resolver: TiklyDown / Snaptik fallback
+            // Second fallback resolver: TiklyDown
             val fallbackResult = tryResolveFallback(tiktokUrl)
             if (fallbackResult.isSuccess) {
                 return@withContext fallbackResult
             }
 
-            return@withContext Result.failure(tikwmResult.exceptionOrNull() ?: Exception("Unable to parse TikTok media"))
+            // Third fallback: Lovetik API
+            val lovetikResult = tryResolveLovetik(tiktokUrl)
+            if (lovetikResult.isSuccess) {
+                return@withContext lovetikResult
+            }
+
+            return@withContext Result.failure(
+                tikwmResult.exceptionOrNull()
+                    ?: fallbackResult.exceptionOrNull()
+                    ?: Exception("Unable to parse TikTok media")
+            )
         } catch (e: Exception) {
             Log.e("TikTokResolver", "Resolution error", e)
             Result.failure(e)
@@ -169,6 +179,7 @@ class TikTokResolverService {
 
             val videoUrl = videoObj?.optString("noWatermark") ?: videoObj?.optString("watermark")
             val audioUrl = musicObj?.optString("play_url")
+            val coverUrl = videoObj?.optString("cover") ?: ""
 
             if (images.isNotEmpty()) {
                 Result.success(
@@ -189,7 +200,7 @@ class TikTokResolverService {
                         type = MediaType.VIDEO,
                         title = title,
                         author = json.optJSONObject("author")?.optString("name"),
-                        coverUrl = videoObj.optString("cover"),
+                        coverUrl = coverUrl,
                         videoUrl = videoUrl,
                         audioUrl = audioUrl,
                         images = emptyList(),
@@ -198,6 +209,64 @@ class TikTokResolverService {
                 )
             } else {
                 Result.failure(Exception("Fallback resolver failed to locate video/images"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private fun tryResolveLovetik(url: String): Result<MediaResult> {
+        return try {
+            val form = FormBody.Builder()
+                .add("query", url)
+                .build()
+            val request = Request.Builder()
+                .url("https://lovetik.com/api/ajax/search")
+                .post(form)
+                .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14; SaveTrick/2.5.7) AppleWebKit/537.36")
+                .build()
+
+            val response = client.newCall(request).execute()
+            val body = response.body?.string() ?: return Result.failure(Exception("Empty response"))
+            val json = JSONObject(body)
+
+            val desc = json.optString("desc", "TikTok Video")
+            val author = json.optString("author", "")
+            val cover = json.optString("cover", "")
+            val links = json.optJSONArray("links")
+
+            var videoUrl: String? = null
+            var audioUrl: String? = null
+
+            if (links != null) {
+                for (i in 0 until links.length()) {
+                    val linkObj = links.optJSONObject(i) ?: continue
+                    val t = linkObj.optString("t")
+                    val a = linkObj.optString("a")
+                    if (videoUrl == null && (t.contains("MP4", ignoreCase = true) || t.contains("HD", ignoreCase = true))) {
+                        videoUrl = a
+                    }
+                    if (audioUrl == null && t.contains("MP3", ignoreCase = true)) {
+                        audioUrl = a
+                    }
+                }
+            }
+
+            if (!videoUrl.isNullOrBlank()) {
+                Result.success(
+                    MediaResult(
+                        type = MediaType.VIDEO,
+                        title = desc,
+                        author = author,
+                        coverUrl = cover,
+                        videoUrl = videoUrl,
+                        audioUrl = audioUrl,
+                        images = emptyList(),
+                        sourceUrl = url
+                    )
+                )
+            } else {
+                Result.failure(Exception("Lovetik resolver found no downloadable link"))
             }
         } catch (e: Exception) {
             Result.failure(e)

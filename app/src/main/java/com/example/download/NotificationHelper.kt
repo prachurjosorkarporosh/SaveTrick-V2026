@@ -24,16 +24,17 @@ class NotificationHelper(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val progressChannel = NotificationChannel(
                 CHANNEL_PROGRESS,
-                "Download Progress",
+                "SaveTrick Downloads",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows real-time download progress and speed"
+                description = "Shows real-time download progress, file size, and transfer speed"
                 setShowBadge(false)
+                enableVibration(false)
             }
 
             val completeChannel = NotificationChannel(
                 CHANNEL_COMPLETE,
-                "Download Completed",
+                "Completed Downloads",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Notifications for successfully saved media"
@@ -65,20 +66,27 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val contentText = if (indeterminate) {
+        val headerText = if (indeterminate) "Downloading..." else "$progress% • Downloading"
+        val detailText = if (indeterminate) {
             "$downloadedFormatted • $speed"
         } else {
-            "$progress% ($downloadedFormatted / $totalFormatted) • $speed"
+            "Speed: $speed • $downloadedFormatted of $totalFormatted"
         }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_PROGRESS)
             .setSmallIcon(R.drawable.ic_stat_download)
-            .setContentTitle("Downloading: $title")
-            .setContentText(contentText)
+            .setContentTitle("$headerText: $title")
+            .setContentText(detailText)
+            .setSubText(speed)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$detailText\n$title")
+            )
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)
             .setProgress(100, progress, indeterminate)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
 
         try {
             NotificationManagerCompat.from(context).notify(notifyId, builder.build())
@@ -90,7 +98,9 @@ class NotificationHelper(private val context: Context) {
         // Dismiss the ongoing progress notification
         dismissNotification(downloadId)
 
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
         val pendingIntent = PendingIntent.getActivity(
             context,
             notifyId,
@@ -100,10 +110,15 @@ class NotificationHelper(private val context: Context) {
 
         val builder = NotificationCompat.Builder(context, CHANNEL_COMPLETE)
             .setSmallIcon(R.drawable.ic_stat_check)
-            .setContentTitle("Download Complete")
+            .setContentTitle("Download Complete ✓")
             .setContentText("$title ($fileName)")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("Successfully saved to your library!\nFile: $fileName")
+            )
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         try {
             NotificationManagerCompat.from(context).notify(notifyId + 100000, builder.build())

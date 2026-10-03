@@ -39,6 +39,8 @@ class SaveTrickRepository(private val context: Context) {
 
     // Preferences
     val themeMode: StateFlow<String> = preferences.themeFlow
+    val accentColor: StateFlow<String> = preferences.accentColorFlow
+    val bgStyle: StateFlow<String> = preferences.bgStyleFlow
     val language: StateFlow<String> = preferences.langFlow
     val isPro: StateFlow<Boolean> = preferences.isProFlow
     val userName: StateFlow<String> = preferences.userNameFlow
@@ -126,5 +128,32 @@ class SaveTrickRepository(private val context: Context) {
             trxId = trxId,
             amount = amount
         )
+    }
+
+    fun getCacheSizeBytes(): Long {
+        return try {
+            val cacheDir = context.cacheDir
+            var total = 0L
+            cacheDir.walkTopDown().forEach { file ->
+                if (file.isFile) total += file.length()
+            }
+            total
+        } catch (_: Exception) {
+            0L
+        }
+    }
+
+    fun clearTemporaryCache(): Long {
+        return try {
+            val cacheDir = context.cacheDir
+            var clearedBytes = 0L
+            cacheDir.listFiles()?.forEach { file ->
+                if (file.isFile) clearedBytes += file.length()
+                file.deleteRecursively()
+            }
+            clearedBytes
+        } catch (_: Exception) {
+            0L
+        }
     }
 }

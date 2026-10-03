@@ -8,6 +8,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,29 +21,38 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Animation
-import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,9 +64,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,15 +86,14 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.repository.SaveTrickRepository
 import com.example.ui.components.BrandHeader
-import com.example.ui.theme.ElectricBlue
-import com.example.ui.theme.ElectricCyan
-import com.example.ui.theme.SuccessGreen
+import com.example.ui.theme.AvailableAccents
+import com.example.ui.theme.LocalAppAccentColor
+import com.example.util.FormatUtils
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
     repository: SaveTrickRepository,
-    onNavigateToAdminLogin: () -> Unit,
     onThemeChanged: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -93,38 +102,29 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
 
     val currentTheme by repository.themeMode.collectAsState()
+    val currentAccent by repository.accentColor.collectAsState()
+    val currentBgStyle by repository.bgStyle.collectAsState()
     val currentLang by repository.language.collectAsState()
     val userName by repository.userName.collectAsState()
+    val isPro by repository.isPro.collectAsState()
+    val accentColor = LocalAppAccentColor.current
+
+    var cacheSize by remember { mutableLongStateOf(repository.getCacheSizeBytes()) }
 
     var showEditNameDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showBgStyleDialog by remember { mutableStateOf(false) }
     var showResolutionDialog by remember { mutableStateOf(false) }
+    var showAudioBitrateDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
+    var showClearHistoryDialog by remember { mutableStateOf(false) }
 
-    var startupAnimEnabled by remember { mutableStateOf(repository.preferences.isStartupAnimationEnabled()) }
+    var autoPasteEnabled by remember { mutableStateOf(repository.preferences.isAutoPasteFromClipboard()) }
+    var autoDownloadShareEnabled by remember { mutableStateOf(repository.preferences.isAutoDownloadOnShare()) }
     var notificationsEnabled by remember { mutableStateOf(repository.preferences.isNotificationsEnabled()) }
     var wifiOnlyEnabled by remember { mutableStateOf(repository.preferences.isWifiOnly()) }
-
-    // Hidden Admin 4-Tap trigger state
-    var tapCount by remember { mutableIntStateOf(0) }
-    var lastTapTime by remember { mutableLongStateOf(0L) }
-
-    fun handleAdminSecretTap() {
-        val now = System.currentTimeMillis()
-        if (now - lastTapTime > 2000L) {
-            tapCount = 1
-        } else {
-            tapCount++
-        }
-        lastTapTime = now
-
-        if (tapCount >= 4) {
-            tapCount = 0
-            Toast.makeText(context, "Opening Admin Portal...", Toast.LENGTH_SHORT).show()
-            onNavigateToAdminLogin()
-        }
-    }
+    var hapticEnabled by remember { mutableStateOf(repository.preferences.isHapticEnabled()) }
 
     Column(
         modifier = modifier
@@ -133,315 +133,15 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        BrandHeader(showVersion = true)
+
         // 1. User Profile Section
         SectionHeader(title = stringResource(R.string.profile_header))
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-            shadowElevation = 1.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(ElectricBlue.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = ElectricBlue,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = userName.ifBlank { "SaveTrick User" },
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "${stringResource(R.string.uid_label)}: ${repository.preferences.getUid()}",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 12.sp
-                            )
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("SaveTrick UID", repository.preferences.getUid()))
-                            Toast.makeText(context, context.getString(R.string.uid_copied), Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.testTag("btn_copy_uid")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy UID",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { showEditNameDialog = true },
-                        modifier = Modifier.testTag("btn_edit_name")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Name",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        // 2. Preferences & Download Settings
-        SectionHeader(title = stringResource(R.string.preferences_header))
-
-        // Direct Material3 Theme Switcher Card (Light / System / Dark)
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-            shadowElevation = 1.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (currentTheme.equals("dark", ignoreCase = true)) Icons.Default.DarkMode else Icons.Default.LightMode,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = stringResource(R.string.theme_mode),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = when (currentTheme.lowercase()) {
-                                    "dark" -> stringResource(R.string.theme_dark)
-                                    "light" -> stringResource(R.string.theme_light)
-                                    else -> stringResource(R.string.theme_system)
-                                },
-                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            )
-                        }
-                    }
-
-                    // Direct Quick Toggle (Switches between light and dark)
-                    Switch(
-                        checked = currentTheme.equals("dark", ignoreCase = true),
-                        onCheckedChange = { isDark ->
-                            val newMode = if (isDark) "dark" else "light"
-                            repository.preferences.setThemeMode(newMode)
-                            onThemeChanged(newMode)
-                        },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = ElectricBlue
-                        ),
-                        modifier = Modifier.testTag("theme_quick_switch")
-                    )
-                }
-
-                // 3-Option Segmented Selector: Light | System | Dark
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    val themeOptions = listOf(
-                        Triple("light", stringResource(R.string.theme_light), Icons.Default.LightMode),
-                        Triple("system", stringResource(R.string.theme_system), Icons.Default.BrightnessAuto),
-                        Triple("dark", stringResource(R.string.theme_dark), Icons.Default.DarkMode)
-                    )
-
-                    themeOptions.forEach { (mode, label, icon) ->
-                        val isSelected = currentTheme.equals(mode, ignoreCase = true)
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable {
-                                    repository.preferences.setThemeMode(mode)
-                                    onThemeChanged(mode)
-                                }
-                                .padding(vertical = 6.dp),
-                            shadowElevation = if (isSelected) 2.dp else 0.dp
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = null,
-                                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 12.sp
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                SettingsItem(
-                    icon = Icons.Default.HighQuality,
-                    title = stringResource(R.string.default_resolution),
-                    subtitle = repository.preferences.getDefaultResolution(),
-                    onClick = { showResolutionDialog = true }
-                )
-                SettingsItem(
-                    icon = Icons.Default.Language,
-                    title = stringResource(R.string.app_language),
-                    subtitle = if (currentLang == "bn") stringResource(R.string.lang_bengali) else stringResource(R.string.lang_english),
-                    onClick = { showLanguageDialog = true }
-                )
-                SettingsItem(
-                    icon = Icons.Default.Folder,
-                    title = stringResource(R.string.storage_destination),
-                    subtitle = if (repository.preferences.getStorageDestination() == "downloads_public") "Downloads/SaveTrick" else "App Storage",
-                    onClick = { showStorageDialog = true }
-                )
-                SettingsToggleItem(
-                    icon = Icons.Default.Animation,
-                    title = stringResource(R.string.startup_animations),
-                    checked = startupAnimEnabled,
-                    onCheckedChange = {
-                        startupAnimEnabled = it
-                        repository.preferences.setStartupAnimationEnabled(it)
-                    }
-                )
-                SettingsToggleItem(
-                    icon = Icons.Default.Notifications,
-                    title = stringResource(R.string.download_notifications),
-                    checked = notificationsEnabled,
-                    onCheckedChange = {
-                        notificationsEnabled = it
-                        repository.preferences.setNotificationsEnabled(it)
-                    }
-                )
-                SettingsToggleItem(
-                    icon = Icons.Default.Wifi,
-                    title = stringResource(R.string.wifi_only),
-                    checked = wifiOnlyEnabled,
-                    onCheckedChange = {
-                        wifiOnlyEnabled = it
-                        repository.preferences.setWifiOnly(it)
-                    }
-                )
-            }
-        }
-
-        // 3. Data & Storage Management
-        SectionHeader(title = stringResource(R.string.data_header))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                SettingsItem(
-                    icon = Icons.Default.DeleteSweep,
-                    title = stringResource(R.string.clear_cache),
-                    subtitle = "Clear temporary files & thumbnail cache",
-                    onClick = {
-                        try {
-                            context.cacheDir.deleteRecursively()
-                            Toast.makeText(context, context.getString(R.string.cache_cleared), Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Cache cleanup completed", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-                SettingsItem(
-                    icon = Icons.Default.Storage,
-                    title = stringResource(R.string.clear_history),
-                    subtitle = "Remove download logs & history",
-                    onClick = {
-                        scope.launch {
-                            repository.clearHistory()
-                            Toast.makeText(context, context.getString(R.string.history_cleared), Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-            }
-        }
-
-        // 4. About SaveTrick
-        SectionHeader(title = stringResource(R.string.about_header))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
         ) {
             Column(
                 modifier = Modifier
@@ -449,88 +149,407 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // SaveTrick brand title with 4-tap detector for Admin Portal
-                BrandHeader(
-                    showVersion = true,
-                    onBrandClick = { handleAdminSecretTap() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("about_brand_header_secret_tap")
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(accentColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
 
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = userName.ifBlank { "SaveTrick User" },
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "UID: ${repository.preferences.getUid()}",
+                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            )
+                            IconButton(
+                                onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("SaveTrick UID", repository.preferences.getUid()))
+                                    Toast.makeText(context, context.getString(R.string.uid_copied), Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copy UID",
+                                    tint = accentColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    IconButton(onClick = { showEditNameDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit_name),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+        // 2. Visual Themes & Colors Section ("aro onek them edd koro bg them ed koro... aro colur theme add koroo")
+        SectionHeader(title = "Appearance & Themes")
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Color Themes selection row
                 Text(
-                    text = stringResource(R.string.app_description),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 20.sp
-                    )
+                    text = "Accent Color Theme",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold)
                 )
 
-                // Developer & Website info
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(AvailableAccents) { accent ->
+                        val isSelected = currentAccent == accent.key
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    repository.preferences.setAccentColor(accent.key)
+                                }
+                                .padding(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape)
+                                    .background(accent.primary)
+                                    .border(
+                                        width = if (isSelected) 3.dp else 1.dp,
+                                        color = if (isSelected) Color.White else Color.Transparent,
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (currentLang == "bn") accent.nameBn else accent.nameEn,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) accent.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Theme Mode (Light / Dark / AMOLED / System)
+                SettingsRowClickable(
+                    icon = Icons.Default.DarkMode,
+                    title = stringResource(R.string.theme_mode),
+                    subtitle = when (currentTheme.lowercase()) {
+                        "dark" -> stringResource(R.string.theme_dark)
+                        "amoled" -> "AMOLED Pure Black"
+                        "light" -> stringResource(R.string.theme_light)
+                        else -> stringResource(R.string.theme_system)
+                    },
+                    onClick = { showThemeDialog = true }
+                )
+
+                // Background Style (Clean, Mesh Gradient, Cyber Glow, AMOLED)
+                SettingsRowClickable(
+                    icon = Icons.Default.Wallpaper,
+                    title = "Background Style",
+                    subtitle = when (currentBgStyle) {
+                        "mesh_gradient" -> "Ambient Mesh Gradient"
+                        "cyber_glow" -> "Cyber Glow Dark"
+                        "amoled_pitch" -> "AMOLED Pure Black"
+                        else -> "Clean Minimal"
+                    },
+                    onClick = { showBgStyleDialog = true }
+                )
+            }
+        }
+
+        // 3. Automation & Direct Share Section
+        SectionHeader(title = "Download Preferences")
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Auto-Download on TikTok Share
+                SettingsRowSwitch(
+                    icon = Icons.Default.Share,
+                    title = "Auto-Download on Direct Share",
+                    subtitle = "Instantly download when link is shared from TikTok",
+                    checked = autoDownloadShareEnabled,
+                    onCheckedChange = {
+                        autoDownloadShareEnabled = it
+                        repository.preferences.setAutoDownloadOnShare(it)
+                    }
+                )
+
+                // Auto-Paste from Clipboard
+                SettingsRowSwitch(
+                    icon = Icons.Default.ContentPaste,
+                    title = "Auto-Paste TikTok Link",
+                    subtitle = "Automatically detect copied TikTok links on launch",
+                    checked = autoPasteEnabled,
+                    onCheckedChange = {
+                        autoPasteEnabled = it
+                        repository.preferences.setAutoPasteFromClipboard(it)
+                    }
+                )
+
+                // Default Video Quality
+                SettingsRowClickable(
+                    icon = Icons.Default.HighQuality,
+                    title = stringResource(R.string.default_resolution),
+                    subtitle = repository.preferences.getDefaultResolution(),
+                    onClick = { showResolutionDialog = true }
+                )
+
+                // Audio Bitrate
+                SettingsRowClickable(
+                    icon = Icons.Default.Audiotrack,
+                    title = "Audio Download Quality",
+                    subtitle = repository.preferences.getAudioBitrate(),
+                    onClick = { showAudioBitrateDialog = true }
+                )
+
+                // Notifications
+                SettingsRowSwitch(
+                    icon = Icons.Default.Notifications,
+                    title = stringResource(R.string.download_notifications),
+                    subtitle = "Show progress, download speed, and completion alerts",
+                    checked = notificationsEnabled,
+                    onCheckedChange = {
+                        notificationsEnabled = it
+                        repository.preferences.setNotificationsEnabled(it)
+                    }
+                )
+
+                // Wi-Fi Only
+                SettingsRowSwitch(
+                    icon = Icons.Default.Wifi,
+                    title = stringResource(R.string.wifi_only),
+                    subtitle = "Save mobile data by downloading only on Wi-Fi",
+                    checked = wifiOnlyEnabled,
+                    onCheckedChange = {
+                        wifiOnlyEnabled = it
+                        repository.preferences.setWifiOnly(it)
+                    }
+                )
+
+                // Haptic Feedback
+                SettingsRowSwitch(
+                    icon = Icons.Default.Vibration,
+                    title = "Haptic Vibration",
+                    subtitle = "Vibrate gently on download completion",
+                    checked = hapticEnabled,
+                    onCheckedChange = {
+                        hapticEnabled = it
+                        repository.preferences.setHapticEnabled(it)
+                    }
+                )
+
+                // Storage Destination
+                SettingsRowClickable(
+                    icon = Icons.Default.Folder,
+                    title = stringResource(R.string.storage_destination),
+                    subtitle = if (repository.preferences.getStorageDestination() == "downloads_public") {
+                        stringResource(R.string.storage_public_downloads)
+                    } else {
+                        stringResource(R.string.storage_internal)
+                    },
+                    onClick = { showStorageDialog = true }
+                )
+
+                // Application Language
+                SettingsRowClickable(
+                    icon = Icons.Default.Language,
+                    title = stringResource(R.string.app_language),
+                    subtitle = if (currentLang == "bn") stringResource(R.string.lang_bengali) else stringResource(R.string.lang_english),
+                    onClick = { showLanguageDialog = true }
+                )
+            }
+        }
+
+        // 4. Data Management & Storage
+        SectionHeader(title = stringResource(R.string.data_header))
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Clear Cache
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val cleared = repository.clearTemporaryCache()
+                            cacheSize = repository.getCacheSizeBytes()
+                            Toast.makeText(
+                                context,
+                                "Cleared ${FormatUtils.formatBytes(cleared)} of cache",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteSweep,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Developer: ${stringResource(R.string.developer_name)}",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+                            text = stringResource(R.string.clear_cache),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                         )
                         Text(
-                            text = "Website: ${stringResource(R.string.developer_website)}",
-                            style = MaterialTheme.typography.bodySmall.copy(color = ElectricBlue),
-                            modifier = Modifier.clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://prachurjo.pro.bd/"))
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {}
-                            }
+                            text = "Current cache: ${FormatUtils.formatBytes(cacheSize)}",
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                     }
                 }
 
+                // Clear History
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showClearHistoryDialog = true }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(R.string.privacy_policy),
-                        style = MaterialTheme.typography.labelMedium.copy(color = ElectricBlue),
-                        modifier = Modifier.clickable {
-                            Toast.makeText(context, "SaveTrick respects your privacy. No personal data collected.", Toast.LENGTH_SHORT).show()
-                        }
+                    Icon(
+                        imageVector = Icons.Default.Storage,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
                     )
-                    Text(
-                        text = stringResource(R.string.terms_of_service),
-                        style = MaterialTheme.typography.labelMedium.copy(color = ElectricBlue),
-                        modifier = Modifier.clickable {
-                            Toast.makeText(context, "For personal backup and offline viewing only.", Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.clear_history),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                        )
+                        Text(
+                            text = "Delete cancelled and failed records",
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        )
+                    }
                 }
+            }
+        }
 
+        // 5. About SaveTrick Section (No admin portal)
+        SectionHeader(title = stringResource(R.string.about_header))
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text(
-                    text = stringResource(R.string.copyright_notice),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    text = "SaveTrick v2.5.7",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = stringResource(R.string.app_description),
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Developed by Prachurjo Sorkar Porosh",
+                    style = MaterialTheme.typography.bodySmall.copy(color = accentColor, fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.clickable {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://prachurjo.pro.bd/"))
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                    }
+                )
+                Text(
+                    text = "© 2026 SaveTrick. All rights reserved.",
+                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 
-    // Edit Name Dialog
+    // Dialog: Edit Name
     if (showEditNameDialog) {
-        var newNameInput by remember { mutableStateOf(userName) }
+        var tempName by remember { mutableStateOf(userName) }
         AlertDialog(
             onDismissRequest = { showEditNameDialog = false },
-            title = { Text(text = stringResource(R.string.edit_name)) },
+            title = { Text(stringResource(R.string.edit_name)) },
             text = {
                 OutlinedTextField(
-                    value = newNameInput,
-                    onValueChange = { newNameInput = it },
+                    value = tempName,
+                    onValueChange = { tempName = it },
+                    label = { Text(stringResource(R.string.name_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -538,37 +557,39 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (newNameInput.isNotBlank()) {
-                            repository.preferences.setUserName(newNameInput.trim())
+                        val trimmed = tempName.trim()
+                        if (trimmed.isNotBlank()) {
+                            repository.preferences.setUserName(trimmed)
                         }
                         showEditNameDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
+                    colors = ButtonDefaults.buttonColors(containerColor = accentColor)
                 ) {
-                    Text(text = stringResource(R.string.save_name))
+                    Text(stringResource(R.string.save_name))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEditNameDialog = false }) {
-                    Text(text = stringResource(R.string.btn_dismiss))
+                    Text(stringResource(R.string.btn_dismiss))
                 }
             }
         )
     }
 
-    // Theme Selection Dialog
+    // Dialog: Theme Mode
     if (showThemeDialog) {
-        val themes = listOf(
+        val themeOptions = listOf(
             "light" to stringResource(R.string.theme_light),
             "dark" to stringResource(R.string.theme_dark),
+            "amoled" to "AMOLED Pure Black",
             "system" to stringResource(R.string.theme_system)
         )
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
-            title = { Text(text = stringResource(R.string.theme_mode)) },
+            title = { Text(stringResource(R.string.theme_mode)) },
             text = {
                 Column {
-                    themes.forEach { (mode, label) ->
+                    themeOptions.forEach { (mode, label) ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -577,11 +598,11 @@ fun SettingsScreen(
                                     onThemeChanged(mode)
                                     showThemeDialog = false
                                 }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = currentTheme.equals(mode, ignoreCase = true),
+                                selected = currentTheme.lowercase() == mode,
                                 onClick = {
                                     repository.preferences.setThemeMode(mode)
                                     onThemeChanged(mode)
@@ -589,64 +610,72 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = label)
+                            Text(text = label, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
             },
-            confirmButton = {}
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showThemeDialog = false }) {
+                    Text(stringResource(R.string.btn_dismiss))
+                }
+            }
         )
     }
 
-    // Language Selection Dialog
-    if (showLanguageDialog) {
-        val langs = listOf(
-            "en" to stringResource(R.string.lang_english),
-            "bn" to stringResource(R.string.lang_bengali)
+    // Dialog: Background Style
+    if (showBgStyleDialog) {
+        val bgOptions = listOf(
+            "default" to "Clean Minimal",
+            "mesh_gradient" to "Ambient Mesh Gradient",
+            "cyber_glow" to "Cyber Glow Dark",
+            "amoled_pitch" to "AMOLED Pure Black"
         )
         AlertDialog(
-            onDismissRequest = { showLanguageDialog = false },
-            title = { Text(text = stringResource(R.string.app_language)) },
+            onDismissRequest = { showBgStyleDialog = false },
+            title = { Text("Background Style") },
             text = {
                 Column {
-                    langs.forEach { (code, label) ->
+                    bgOptions.forEach { (style, label) ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    repository.preferences.setLanguage(code)
-                                    showLanguageDialog = false
-                                    val msg = if (code == "bn") "ভাষা পরিবর্তন করে বাংলা করা হয়েছে" else "Language changed to English"
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    repository.preferences.setBgStyle(style)
+                                    showBgStyleDialog = false
                                 }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = currentLang == code,
+                                selected = currentBgStyle == style,
                                 onClick = {
-                                    repository.preferences.setLanguage(code)
-                                    showLanguageDialog = false
-                                    val msg = if (code == "bn") "ভাষা পরিবর্তন করে বাংলা করা হয়েছে" else "Language changed to English"
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    repository.preferences.setBgStyle(style)
+                                    showBgStyleDialog = false
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = label)
+                            Text(text = label, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
             },
-            confirmButton = {}
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showBgStyleDialog = false }) {
+                    Text(stringResource(R.string.btn_dismiss))
+                }
+            }
         )
     }
 
-    // Resolution Dialog
+    // Dialog: Video Resolution
     if (showResolutionDialog) {
-        val resolutions = listOf("1080p", "720p")
+        val resolutions = listOf("1080p", "720p", "480p")
         AlertDialog(
             onDismissRequest = { showResolutionDialog = false },
-            title = { Text(text = stringResource(R.string.default_resolution)) },
+            title = { Text(stringResource(R.string.default_resolution)) },
             text = {
                 Column {
                     resolutions.forEach { res ->
@@ -657,7 +686,7 @@ fun SettingsScreen(
                                     repository.preferences.setDefaultResolution(res)
                                     showResolutionDialog = false
                                 }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
@@ -668,27 +697,121 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = res)
+                            Text(text = res, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
             },
-            confirmButton = {}
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showResolutionDialog = false }) {
+                    Text(stringResource(R.string.btn_dismiss))
+                }
+            }
         )
     }
 
-    // Storage Dialog
+    // Dialog: Audio Bitrate
+    if (showAudioBitrateDialog) {
+        val bitrates = listOf(
+            "320kbps" to "320 kbps (High Quality MP3)",
+            "192kbps" to "192 kbps (Standard MP3)",
+            "128kbps" to "128 kbps (Compact MP3)"
+        )
+        AlertDialog(
+            onDismissRequest = { showAudioBitrateDialog = false },
+            title = { Text("Audio Download Quality") },
+            text = {
+                Column {
+                    bitrates.forEach { (rate, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    repository.preferences.setAudioBitrate(rate)
+                                    showAudioBitrateDialog = false
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = repository.preferences.getAudioBitrate() == rate,
+                                onClick = {
+                                    repository.preferences.setAudioBitrate(rate)
+                                    showAudioBitrateDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showAudioBitrateDialog = false }) {
+                    Text(stringResource(R.string.btn_dismiss))
+                }
+            }
+        )
+    }
+
+    // Dialog: Language
+    if (showLanguageDialog) {
+        val languages = listOf(
+            "en" to stringResource(R.string.lang_english),
+            "bn" to stringResource(R.string.lang_bengali)
+        )
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(stringResource(R.string.app_language)) },
+            text = {
+                Column {
+                    languages.forEach { (code, name) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    repository.preferences.setLanguage(code)
+                                    showLanguageDialog = false
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = currentLang == code,
+                                onClick = {
+                                    repository.preferences.setLanguage(code)
+                                    showLanguageDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = name, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text(stringResource(R.string.btn_dismiss))
+                }
+            }
+        )
+    }
+
+    // Dialog: Storage
     if (showStorageDialog) {
-        val options = listOf(
+        val storageOptions = listOf(
             "downloads_public" to stringResource(R.string.storage_public_downloads),
-            "app_internal" to stringResource(R.string.storage_internal)
+            "internal" to stringResource(R.string.storage_internal)
         )
         AlertDialog(
             onDismissRequest = { showStorageDialog = false },
-            title = { Text(text = stringResource(R.string.storage_destination)) },
+            title = { Text(stringResource(R.string.storage_destination)) },
             text = {
                 Column {
-                    options.forEach { (dest, label) ->
+                    storageOptions.forEach { (dest, label) ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -696,7 +819,7 @@ fun SettingsScreen(
                                     repository.preferences.setStorageDestination(dest)
                                     showStorageDialog = false
                                 }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
@@ -707,12 +830,45 @@ fun SettingsScreen(
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = label)
+                            Text(text = label, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
             },
-            confirmButton = {}
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showStorageDialog = false }) {
+                    Text(stringResource(R.string.btn_dismiss))
+                }
+            }
+        )
+    }
+
+    // Dialog: Clear History Confirm
+    if (showClearHistoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearHistoryDialog = false },
+            title = { Text(stringResource(R.string.clear_history)) },
+            text = { Text("Are you sure you want to delete all failed and cancelled records from history?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            repository.clearHistory()
+                            Toast.makeText(context, context.getString(R.string.history_cleared), Toast.LENGTH_SHORT).show()
+                        }
+                        showClearHistoryDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.btn_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearHistoryDialog = false }) {
+                    Text(stringResource(R.string.btn_dismiss))
+                }
+            }
         )
     }
 }
@@ -721,17 +877,17 @@ fun SettingsScreen(
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleSmall.copy(
-            color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.labelLarge.copy(
             fontWeight = FontWeight.Bold,
-            fontSize = 13.sp
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 14.sp
         ),
-        modifier = Modifier.padding(start = 4.dp)
+        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
     )
 }
 
 @Composable
-private fun SettingsItem(
+private fun SettingsRowClickable(
     icon: ImageVector,
     title: String,
     subtitle: String,
@@ -740,21 +896,21 @@ private fun SettingsItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(14.dp),
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
             )
             Text(
                 text = subtitle,
@@ -764,43 +920,49 @@ private fun SettingsItem(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-            modifier = Modifier.size(14.dp)
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(16.dp)
         )
     }
 }
 
 @Composable
-private fun SettingsToggleItem(
+private fun SettingsRowSwitch(
     icon: ImageVector,
     title: String,
+    subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(14.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = ElectricBlue
+                checkedTrackColor = MaterialTheme.colorScheme.primary
             )
         )
     }

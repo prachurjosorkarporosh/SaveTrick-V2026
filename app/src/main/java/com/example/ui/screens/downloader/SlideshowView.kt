@@ -1,12 +1,13 @@
 package com.example.ui.screens.downloader
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,10 +17,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -46,6 +49,7 @@ fun SlideshowView(
     onDownloadAllImages: () -> Unit,
     audioUrl: String? = null,
     onDownloadAudio: (() -> Unit)? = null,
+    onImageClick: ((index: Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -136,6 +140,7 @@ fun SlideshowView(
                 imageUrl = imageUrl,
                 index = index + 1,
                 totalCount = images.size,
+                onClick = { onImageClick?.invoke(index) },
                 onDownload = { onDownloadSingleImage(imageUrl, index + 1) }
             )
         }
@@ -147,6 +152,7 @@ private fun SingleImageCard(
     imageUrl: String,
     index: Int,
     totalCount: Int,
+    onClick: () -> Unit,
     onDownload: () -> Unit
 ) {
     Surface(
@@ -167,13 +173,14 @@ private fun SingleImageCard(
                     .fillMaxWidth()
                     .height(380.dp)
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .background(Color.Black.copy(alpha = 0.05f)),
+                    .background(Color.Black.copy(alpha = 0.05f))
+                    .clickable(onClick = onClick),
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = "Slideshow photo $index of $totalCount",
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
                 )
 
@@ -193,6 +200,24 @@ private fun SingleImageCard(
                             fontWeight = FontWeight.Bold
                         ),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+
+                // Fullscreen indicator
+                Surface(
+                    color = Color.Black.copy(alpha = 0.65f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "View Fullscreen",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(18.dp)
                     )
                 }
             }

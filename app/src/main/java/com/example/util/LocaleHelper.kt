@@ -10,7 +10,7 @@ import java.util.Locale
 object LocaleHelper {
 
     fun applyLocale(context: Context, langCode: String): Context {
-        val locale = Locale(langCode)
+        val locale = Locale.forLanguageTag(langCode)
         Locale.setDefault(locale)
 
         // For Android 13+ (TIRAMISU) per-app language feature
@@ -41,7 +41,7 @@ object LocaleHelper {
     }
 
     fun getLocalizedConfiguration(baseConfig: Configuration, langCode: String): Configuration {
-        val locale = Locale(langCode)
+        val locale = Locale.forLanguageTag(langCode)
         return Configuration(baseConfig).apply {
             setLocale(locale)
             setLayoutDirection(locale)

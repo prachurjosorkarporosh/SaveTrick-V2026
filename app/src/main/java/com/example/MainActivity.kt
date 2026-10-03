@@ -22,9 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +32,7 @@ import com.example.data.repository.SaveTrickRepository
 import com.example.navigation.AppNavGraph
 import com.example.ui.theme.SaveTrickTheme
 import com.example.util.LocaleHelper
+import com.example.util.UrlValidator
 
 class MainActivity : ComponentActivity() {
 
@@ -64,6 +63,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val currentTheme by repository.themeMode.collectAsState()
+            val currentAccent by repository.accentColor.collectAsState()
+            val currentBgStyle by repository.bgStyle.collectAsState()
             val currentLanguage by repository.language.collectAsState()
 
             val systemConfiguration = LocalConfiguration.current
@@ -106,7 +107,11 @@ class MainActivity : ComponentActivity() {
                     LocalConfiguration provides localizedConfiguration,
                     LocalContext provides localizedContext
                 ) {
-                    SaveTrickTheme(themeMode = currentTheme) {
+                    SaveTrickTheme(
+                        themeMode = currentTheme,
+                        accentKey = currentAccent,
+                        bgStyle = currentBgStyle
+                    ) {
                         Surface(
                             modifier = Modifier.fillMaxSize(),
                             color = MaterialTheme.colorScheme.background
@@ -148,15 +153,16 @@ class MainActivity : ComponentActivity() {
                 val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
                     ?: intent.getStringExtra(Intent.EXTRA_SUBJECT)
                 if (!sharedText.isNullOrBlank()) {
-                    repository.onIncomingSharedUrl(sharedText)
+                    val sanitized = UrlValidator.sanitizeUrl(sharedText)
+                    repository.onIncomingSharedUrl(sanitized)
                 }
             }
         } else if (Intent.ACTION_VIEW == action) {
             val dataUri = intent.data
             if (dataUri != null) {
-                repository.onIncomingSharedUrl(dataUri.toString())
+                val sanitized = UrlValidator.sanitizeUrl(dataUri.toString())
+                repository.onIncomingSharedUrl(sanitized)
             }
         }
     }
 }
-

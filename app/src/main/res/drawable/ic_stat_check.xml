@@ -3,7 +3,8 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+    <!-- Modern crisp checkmark in status bar -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z"/>
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9.55,17.22L4.28,11.95C3.9,11.57 3.9,10.95 4.28,10.56C4.66,10.18 5.28,10.18 5.66,10.56L9.55,14.44L18.34,5.65C18.72,5.27 19.34,5.27 19.72,5.65C20.1,6.03 20.1,6.65 19.72,7.03L10.24,16.51C10.05,16.7 9.8,16.8 9.55,16.8C9.3,16.8 9.05,16.7 8.86,16.51L9.55,17.22Z"/>
 </vector>

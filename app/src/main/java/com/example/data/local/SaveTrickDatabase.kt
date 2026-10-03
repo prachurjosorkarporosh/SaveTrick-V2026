@@ -20,7 +20,7 @@ abstract class SaveTrickDatabase : RoomDatabase() {
                     SaveTrickDatabase::class.java,
                     "savetrick_database"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(true)
                     .build()
                 INSTANCE = instance
                 instance

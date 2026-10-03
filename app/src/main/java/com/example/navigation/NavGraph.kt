@@ -37,21 +37,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.R
 import com.example.data.repository.SaveTrickRepository
-import com.example.ui.screens.admin.AdminDashboardScreen
-import com.example.ui.screens.admin.AdminLoginScreen
 import com.example.ui.screens.downloader.DownloaderScreen
 import com.example.ui.screens.library.LibraryScreen
 import com.example.ui.screens.settings.SettingsScreen
 import com.example.ui.screens.startup.OnboardingScreen
 import com.example.ui.screens.startup.StartupScreen
-import com.example.ui.theme.ElectricBlue
+import com.example.ui.theme.AppBackgroundContainer
+import com.example.ui.theme.LocalAppAccentColor
 
 object Destinations {
     const val STARTUP = "startup"
     const val ONBOARDING = "onboarding"
     const val MAIN = "main"
-    const val ADMIN_LOGIN = "admin_login"
-    const val ADMIN_DASHBOARD = "admin_dashboard"
 }
 
 @Composable
@@ -98,34 +95,7 @@ fun AppNavGraph(
         composable(Destinations.MAIN) {
             MainAppScaffold(
                 repository = repository,
-                onNavigateToAdminLogin = {
-                    navController.navigate(Destinations.ADMIN_LOGIN)
-                },
                 onThemeChanged = onThemeChanged
-            )
-        }
-
-        composable(Destinations.ADMIN_LOGIN) {
-            AdminLoginScreen(
-                repository = repository,
-                onLoginSuccess = {
-                    navController.navigate(Destinations.ADMIN_DASHBOARD) {
-                        popUpTo(Destinations.ADMIN_LOGIN) { inclusive = true }
-                    }
-                },
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(Destinations.ADMIN_DASHBOARD) {
-            AdminDashboardScreen(
-                repository = repository,
-                onLogout = {
-                    navController.navigate(Destinations.MAIN) {
-                        popUpTo(Destinations.ADMIN_DASHBOARD) { inclusive = true }
-                    }
-                },
-                onBack = { navController.popBackStack() }
             )
         }
     }
@@ -134,92 +104,94 @@ fun AppNavGraph(
 @Composable
 fun MainAppScaffold(
     repository: SaveTrickRepository,
-    onNavigateToAdminLogin: () -> Unit,
     onThemeChanged: (String) -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val isPro by repository.isPro.collectAsState()
+    val accentColor = LocalAppAccentColor.current
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Download, contentDescription = stringResource(R.string.nav_downloader)) },
-                    label = { Text(stringResource(R.string.nav_downloader)) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        indicatorColor = ElectricBlue
-                    ),
-                    modifier = Modifier.testTag("nav_item_downloader")
-                )
+    AppBackgroundContainer {
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            bottomBar = {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ) {
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Default.Download, contentDescription = stringResource(R.string.nav_downloader)) },
+                        label = { Text(stringResource(R.string.nav_downloader)) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            indicatorColor = accentColor
+                        ),
+                        modifier = Modifier.testTag("nav_item_downloader")
+                    )
 
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.VideoLibrary, contentDescription = stringResource(R.string.nav_library)) },
-                    label = { Text(stringResource(R.string.nav_library)) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        indicatorColor = ElectricBlue
-                    ),
-                    modifier = Modifier.testTag("nav_item_library")
-                )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Default.VideoLibrary, contentDescription = stringResource(R.string.nav_library)) },
+                        label = { Text(stringResource(R.string.nav_library)) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            indicatorColor = accentColor
+                        ),
+                        modifier = Modifier.testTag("nav_item_library")
+                    )
 
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_settings)) },
-                    label = { Text(stringResource(R.string.nav_settings)) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        indicatorColor = ElectricBlue
-                    ),
-                    modifier = Modifier.testTag("nav_item_settings")
-                )
-            }
-        }
-    ) { innerPadding ->
-        AnimatedContent(
-            targetState = selectedTab,
-            transitionSpec = {
-                if (targetState > initialState) {
-                    (slideInHorizontally(animationSpec = tween(280)) { it / 4 } + fadeIn(animationSpec = tween(280)))
-                        .togetherWith(slideOutHorizontally(animationSpec = tween(240)) { -it / 4 } + fadeOut(animationSpec = tween(240)))
-                } else {
-                    (slideInHorizontally(animationSpec = tween(280)) { -it / 4 } + fadeIn(animationSpec = tween(280)))
-                        .togetherWith(slideOutHorizontally(animationSpec = tween(240)) { it / 4 } + fadeOut(animationSpec = tween(240)))
+                    NavigationBarItem(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_settings)) },
+                        label = { Text(stringResource(R.string.nav_settings)) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            indicatorColor = accentColor
+                        ),
+                        modifier = Modifier.testTag("nav_item_settings")
+                    )
                 }
-            },
-            label = "tab_transition",
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) { targetTab ->
-            when (targetTab) {
-                0 -> DownloaderScreen(
-                    repository = repository,
-                    isPro = isPro,
-                    onNavigateToSettings = { selectedTab = 2 },
-                    snackbarHostState = snackbarHostState,
-                    modifier = Modifier.fillMaxSize()
-                )
-                1 -> LibraryScreen(
-                    repository = repository,
-                    modifier = Modifier.fillMaxSize()
-                )
-                2 -> SettingsScreen(
-                    repository = repository,
-                    onNavigateToAdminLogin = onNavigateToAdminLogin,
-                    onThemeChanged = onThemeChanged,
-                    modifier = Modifier.fillMaxSize()
-                )
+            }
+        ) { innerPadding ->
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = {
+                    if (targetState > initialState) {
+                        (slideInHorizontally(animationSpec = tween(280)) { it / 4 } + fadeIn(animationSpec = tween(280)))
+                            .togetherWith(slideOutHorizontally(animationSpec = tween(240)) { -it / 4 } + fadeOut(animationSpec = tween(240)))
+                    } else {
+                        (slideInHorizontally(animationSpec = tween(280)) { -it / 4 } + fadeIn(animationSpec = tween(280)))
+                            .togetherWith(slideOutHorizontally(animationSpec = tween(240)) { it / 4 } + fadeOut(animationSpec = tween(240)))
+                    }
+                },
+                label = "tab_transition",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) { targetTab ->
+                when (targetTab) {
+                    0 -> DownloaderScreen(
+                        repository = repository,
+                        isPro = isPro,
+                        onNavigateToSettings = { selectedTab = 2 },
+                        snackbarHostState = snackbarHostState,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    1 -> LibraryScreen(
+                        repository = repository,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    2 -> SettingsScreen(
+                        repository = repository,
+                        onThemeChanged = onThemeChanged,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

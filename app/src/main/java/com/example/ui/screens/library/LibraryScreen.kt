@@ -1,12 +1,10 @@
 package com.example.ui.screens.library
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,14 +20,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -69,11 +65,15 @@ import com.example.R
 import com.example.data.local.DownloadEntity
 import com.example.data.model.MediaType
 import com.example.data.repository.SaveTrickRepository
+import com.example.ui.components.ModernAudioPlayerSheet
+import com.example.ui.components.ModernPhotoViewerDialog
+import com.example.ui.components.ModernVideoPlayerDialog
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.ElectricCyan
 import com.example.ui.theme.ErrorRed
-import com.example.ui.theme.SuccessGreen
+import com.example.ui.theme.LocalAppAccentColor
 import com.example.util.FormatUtils
+import com.example.util.MediaShareHelper
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -84,6 +84,7 @@ fun LibraryScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val accentColor = LocalAppAccentColor.current
 
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Downloading, 1: Downloaded, 2: History
 
@@ -100,6 +101,11 @@ fun LibraryScreen(
 
     var itemToDelete by remember { mutableStateOf<DownloadEntity?>(null) }
 
+    // In-App Media Viewer States
+    var activeVideoItem by remember { mutableStateOf<DownloadEntity?>(null) }
+    var activeAudioItem by remember { mutableStateOf<DownloadEntity?>(null) }
+    var activePhotoItem by remember { mutableStateOf<DownloadEntity?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -111,7 +117,8 @@ fun LibraryScreen(
             total = totalDownloads,
             videos = videoCount,
             audios = audioCount,
-            storage = FormatUtils.formatBytes(totalStorage)
+            storage = FormatUtils.formatBytes(totalStorage),
+            accentColor = accentColor
         )
 
         // Tabs: Downloading | Downloaded | History
@@ -139,6 +146,7 @@ fun LibraryScreen(
                     },
                     modifier = Modifier.testTag("tab_downloading")
                 )
+
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
@@ -152,12 +160,13 @@ fun LibraryScreen(
                     },
                     modifier = Modifier.testTag("tab_downloaded")
                 )
+
                 Tab(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
                     text = {
                         Text(
-                            text = stringResource(R.string.tab_history),
+                            text = "${stringResource(R.string.tab_history)} (${historyDownloads.size})",
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium
                             )
@@ -171,89 +180,90 @@ fun LibraryScreen(
         // Tab Content
         when (selectedTab) {
             0 -> {
-                // Downloading
+                // Downloading tab
                 if (activeDownloads.isEmpty()) {
-                    EmptyState(message = stringResource(R.string.no_downloading))
+                    EmptyStateView(
+                        icon = Icons.Default.Movie,
+                        message = stringResource(R.string.no_downloading)
+                    )
                 } else {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         items(activeDownloads, key = { it.id }) { item ->
                             DownloadingItemCard(
                                 item = item,
-                                onCancel = { repository.cancelDownload(item.id) }
+                                onCancel = { repository.cancelDownload(item.id) },
+                                accentColor = accentColor
                             )
                         }
                     }
                 }
             }
+
             1 -> {
-                // Downloaded
+                // Downloaded tab
                 if (downloadedItems.isEmpty()) {
-                    EmptyState(message = stringResource(R.string.no_downloaded))
+                    EmptyStateView(
+                        icon = Icons.Default.Movie,
+                        message = stringResource(R.string.no_downloaded)
+                    )
                 } else {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         items(downloadedItems, key = { it.id }) { item ->
                             DownloadedItemCard(
                                 item = item,
-                                onOpen = { openFile(context, item) },
-                                onShare = { shareFile(context, item) },
+                                onOpen = {
+                                    when (item.mediaType.uppercase()) {
+                                        "VIDEO" -> activeVideoItem = item
+                                        "AUDIO" -> activeAudioItem = item
+                                        else -> activePhotoItem = item
+                                    }
+                                },
+                                onShare = {
+                                    MediaShareHelper.shareMediaFile(context, item)
+                                },
                                 onDelete = { itemToDelete = item }
                             )
                         }
                     }
                 }
             }
+
             2 -> {
-                // History
+                // History tab
                 if (historyDownloads.isEmpty()) {
-                    EmptyState(message = stringResource(R.string.no_history))
+                    EmptyStateView(
+                        icon = Icons.Default.Movie,
+                        message = stringResource(R.string.no_history)
+                    )
                 } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(
-                                onClick = {
-                                    scope.launch { repository.clearHistory() }
-                                },
-                                modifier = Modifier.testTag("btn_clear_history")
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.clear_history),
-                                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.primary)
-                                )
-                            }
-                        }
-
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(historyDownloads, key = { it.id }) { item ->
-                                HistoryItemCard(
-                                    item = item,
-                                    onRetry = {
-                                        val mType = try {
-                                            MediaType.valueOf(item.mediaType)
-                                        } catch (_: Exception) { MediaType.VIDEO }
-
-                                        repository.startDownload(
-                                            sourceUrl = item.sourceUrl,
-                                            mediaUrl = item.sourceUrl,
-                                            title = item.title,
-                                            thumbnail = item.thumbnail,
-                                            mediaType = mType
-                                        )
-                                        Toast.makeText(context, context.getString(R.string.retrying_download), Toast.LENGTH_SHORT).show()
-                                    }
-                                )
-                            }
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(historyDownloads, key = { it.id }) { item ->
+                            HistoryItemCard(
+                                item = item,
+                                onRetry = {
+                                    repository.startDownload(
+                                        sourceUrl = item.sourceUrl,
+                                        mediaUrl = item.sourceUrl,
+                                        title = item.title,
+                                        thumbnail = item.thumbnail,
+                                        mediaType = when (item.mediaType.uppercase()) {
+                                            "VIDEO" -> MediaType.VIDEO
+                                            "AUDIO" -> MediaType.AUDIO
+                                            else -> MediaType.IMAGE
+                                        }
+                                    )
+                                    Toast.makeText(context, context.getString(R.string.retrying_download), Toast.LENGTH_SHORT).show()
+                                }
+                            )
                         }
                     }
                 }
@@ -261,28 +271,62 @@ fun LibraryScreen(
         }
     }
 
-    // Delete Confirmation Dialog
+    // Modern In-App Video Player Dialog
+    activeVideoItem?.let { item ->
+        ModernVideoPlayerDialog(
+            videoUrl = item.filePath,
+            title = item.title,
+            onDismiss = { activeVideoItem = null },
+            onShare = { MediaShareHelper.shareMediaFile(context, item) },
+            onOpenExternal = { MediaShareHelper.openMediaFile(context, item) }
+        )
+    }
+
+    // Modern In-App MP3 Player Sheet
+    activeAudioItem?.let { item ->
+        ModernAudioPlayerSheet(
+            audioUrl = item.filePath,
+            title = item.title,
+            thumbnailUrl = item.thumbnail,
+            onDismiss = { activeAudioItem = null },
+            onShare = { MediaShareHelper.shareMediaFile(context, item) }
+        )
+    }
+
+    // Modern In-App Photo Viewer Dialog
+    activePhotoItem?.let { item ->
+        ModernPhotoViewerDialog(
+            images = listOf(item.filePath),
+            initialIndex = 0,
+            onDismiss = { activePhotoItem = null },
+            onShareSingle = { _, _ -> MediaShareHelper.shareMediaFile(context, item) }
+        )
+    }
+
+    // Confirm Delete Dialog
     itemToDelete?.let { item ->
         AlertDialog(
             onDismissRequest = { itemToDelete = null },
-            title = { Text(text = stringResource(R.string.delete_confirm_title)) },
-            text = { Text(text = stringResource(R.string.delete_confirm_message)) },
+            title = { Text(stringResource(R.string.delete_confirm_title)) },
+            text = { Text(stringResource(R.string.delete_confirm_message)) },
             confirmButton = {
-                TextButton(
+                OutlinedButton(
                     onClick = {
                         scope.launch {
                             repository.deleteDownloaded(item.id)
-                            itemToDelete = null
                         }
-                    },
-                    modifier = Modifier.testTag("btn_confirm_delete")
+                        itemToDelete = null
+                    }
                 ) {
-                    Text(text = stringResource(R.string.btn_confirm), color = ErrorRed)
+                    Text(
+                        text = stringResource(R.string.btn_confirm),
+                        color = ErrorRed
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { itemToDelete = null }) {
-                    Text(text = stringResource(R.string.btn_dismiss))
+                    Text(stringResource(R.string.btn_dismiss))
                 }
             }
         )
@@ -294,7 +338,8 @@ private fun StatsCard(
     total: Int,
     videos: Int,
     audios: Int,
-    storage: String
+    storage: String,
+    accentColor: Color
 ) {
     Surface(
         modifier = Modifier
@@ -312,22 +357,22 @@ private fun StatsCard(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatItem(label = stringResource(R.string.stat_downloads), value = total.toString())
-            StatItem(label = stringResource(R.string.stat_videos), value = videos.toString())
-            StatItem(label = stringResource(R.string.stat_audios), value = audios.toString())
-            StatItem(label = stringResource(R.string.stat_storage), value = storage)
+            StatItem(label = stringResource(R.string.stat_downloads), value = total.toString(), color = accentColor)
+            StatItem(label = stringResource(R.string.stat_videos), value = videos.toString(), color = accentColor)
+            StatItem(label = stringResource(R.string.stat_audios), value = audios.toString(), color = accentColor)
+            StatItem(label = stringResource(R.string.stat_storage), value = storage, color = accentColor)
         }
     }
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
+private fun StatItem(label: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold,
-                color = ElectricCyan
+                color = color
             )
         )
         Text(
@@ -343,7 +388,8 @@ private fun StatItem(label: String, value: String) {
 @Composable
 private fun DownloadingItemCard(
     item: DownloadEntity,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    accentColor: Color
 ) {
     Card(
         modifier = Modifier
@@ -363,7 +409,6 @@ private fun DownloadingItemCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Media type icon or thumb
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -386,7 +431,7 @@ private fun DownloadingItemCard(
                                 else -> Icons.Default.Image
                             },
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = accentColor
                         )
                     }
                 }
@@ -417,7 +462,6 @@ private fun DownloadingItemCard(
                 }
             }
 
-            // Real progress bar
             if (item.totalBytes > 0) {
                 LinearProgressIndicator(
                     progress = { item.progress / 100f },
@@ -425,7 +469,7 @@ private fun DownloadingItemCard(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = ElectricBlue
+                    color = accentColor
                 )
             } else {
                 LinearProgressIndicator(
@@ -433,7 +477,7 @@ private fun DownloadingItemCard(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = ElectricBlue
+                    color = accentColor
                 )
             }
         }
@@ -450,6 +494,7 @@ private fun DownloadedItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onOpen)
             .testTag("downloaded_item_${item.id}"),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -505,7 +550,7 @@ private fun DownloadedItemCard(
             Row {
                 IconButton(onClick = onOpen, modifier = Modifier.testTag("btn_open_${item.id}")) {
                     Icon(
-                        imageVector = Icons.Default.OpenInNew,
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = stringResource(R.string.action_open),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
@@ -554,83 +599,52 @@ private fun HistoryItemCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.title,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     maxLines = 1
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val statusColor = when (item.status) {
-                        "DOWNLOADED" -> SuccessGreen
-                        "FAILED" -> ErrorRed
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                    Text(
-                        text = item.status,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = statusColor,
-                            fontWeight = FontWeight.Bold
-                        )
+                Text(
+                    text = "Status: ${item.status} • ${FormatUtils.formatShortDate(item.createdAt)}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = if (item.status == "FAILED") ErrorRed else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = FormatUtils.formatShortDate(item.createdAt),
-                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    )
-                }
-                if (item.status == "FAILED" && !item.errorMessage.isNullOrBlank()) {
-                    Text(
-                        text = item.errorMessage,
-                        style = MaterialTheme.typography.bodySmall.copy(color = ErrorRed, fontSize = 11.sp),
-                        maxLines = 1
-                    )
-                }
+                )
             }
 
-            if (item.status != "DOWNLOADED") {
-                IconButton(onClick = onRetry) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = stringResource(R.string.action_retry),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+            IconButton(onClick = onRetry) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = stringResource(R.string.action_retry),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
 }
 
 @Composable
-private fun EmptyState(message: String) {
-    Box(
+private fun EmptyStateView(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    message: String
+) {
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
+            .padding(top = 80.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Folder,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                modifier = Modifier.size(54.dp)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-        }
+        )
     }
-}
-
-private fun openFile(context: Context, item: DownloadEntity) {
-    com.example.util.MediaShareHelper.openMediaFile(context, item)
-}
-
-private fun shareFile(context: Context, item: DownloadEntity) {
-    com.example.util.MediaShareHelper.shareMediaFile(context, item)
 }
