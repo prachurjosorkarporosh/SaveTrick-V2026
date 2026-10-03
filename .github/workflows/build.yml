@@ -7,93 +7,67 @@ on:
     branches: ["main", "master"]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
-    name: Build APK
+    name: Build Debug APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: 1. Checkout Repository
+      - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: 2. Set up JDK 21
+      - name: 2. Set up Java JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "21"
 
-      - name: 3. Setup Android SDK Environment & Licenses
+      - name: 3. Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 4. Set up Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: 5. Prepare Keystore and Configurations
         run: |
-          mkdir -p "$ANDROID_HOME/licenses" || true
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          # 1. Create debug keystore
+          keytool -genkeypair -v -keystore debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+          # 2. Touch .env for Secrets Gradle Plugin
           touch .env
-          touch .env.example
+          echo "DUMMY_KEY=true" > .env
 
-      - name: 4. Prepare Keystore
-        run: |
-          if [ ! -f "debug.keystore" ]; then
-            if [ -f "debug.keystore.base64" ]; then
-              base64 -d debug.keystore.base64 > debug.keystore 2>/dev/null || base64 --decode debug.keystore.base64 > debug.keystore 2>/dev/null || true
-            fi
-          fi
-          if [ ! -f "debug.keystore" ] || [ ! -s "debug.keystore" ]; then
-            keytool -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
-          fi
-
-      - name: 5. Setup Google Services Configuration
-        run: |
-          if [ -n "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+          # 3. Create dummy google-services.json for Google Services Plugin
+          if [ ! -f "app/google-services.json" ]; then
             mkdir -p app
-            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > app/google-services.json
+            echo '{"project_info":{"project_number":"0","project_id":"dummy-app"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0"},"api_key":[{}]}]}' > app/google-services.json
           fi
 
-      - name: 6. Make gradlew executable
-        run: chmod +x gradlew
+          # 4. Accept Android SDK licenses
+          yes | sdkmanager --licenses || true
 
-      - name: 7. Build APK with Gradle
-        run: ./gradlew assembleDebug --stacktrace --no-daemon -x test -x lint
-
-      - name: 8. Locate and Copy APK
+      - name: 6. Make Gradlew Executable
         run: |
-          mkdir -p build-output
-          APK_FILE=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
-          if [ -z "$APK_FILE" ]; then
-            APK_FILE=$(find . -name "*.apk" | grep -v "build-output" | head -n 1)
+          if [ ! -f "./gradlew" ]; then
+            gradle wrapper --gradle-version 9.3.1
           fi
-          if [ -n "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
-            cp "$APK_FILE" build-output/SaveTrick-debug.apk
-            echo "✅ Successfully found and copied APK: $APK_FILE"
-            ls -lh build-output/SaveTrick-debug.apk
-          else
-            echo "❌ APK file not found after build"
-            find . -name "*.apk" || true
-            exit 1
-          fi
+          chmod +x ./gradlew
+
+      - name: 7. Build Debug APK
+        run: |
+          ./gradlew :app:assembleDebug --no-daemon --no-configuration-cache --stacktrace
+
+      - name: 8. Verify APK
+        run: |
+          echo "Generated APK files:"
+          find app/build/outputs/apk/debug -name "*.apk" -print
 
       - name: 9. Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SaveTrick-APK
-          path: build-output/SaveTrick-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
-
-      - name: 10. Auto-create GitHub Release
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        continue-on-error: true
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v2.5.7-build-${{ github.run_number }}
-          name: SaveTrick v2.5.7 (Build ${{ github.run_number }})
-          body: |
-            ### SaveTrick Android APK
-            স্বয়ংক্রিয়ভাবে তৈরি হওয়া **Debug APK** নিচে সংযুক্ত করা হয়েছে।
-          files: build-output/SaveTrick-debug.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if-no-files-found: error

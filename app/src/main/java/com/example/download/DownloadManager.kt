@@ -263,6 +263,19 @@ class DownloadManager private constructor(private val context: Context) {
                     completedAt = System.currentTimeMillis()
                 )
 
+                // Scan media file so it immediately shows up in Android system Gallery / Photos
+                try {
+                    android.media.MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(targetFile.absolutePath),
+                        arrayOf(mimeType)
+                    ) { path, uri ->
+                        Log.d("DownloadManager", "Media scanned: $path -> $uri")
+                    }
+                } catch (scanEx: Exception) {
+                    Log.w("DownloadManager", "Media scan notice: ${scanEx.message}")
+                }
+
                 // 8 & 9. Notification
                 if (preferences.isNotificationsEnabled()) {
                     notificationHelper.showCompletionNotification(
